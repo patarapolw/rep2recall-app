@@ -2,4 +2,4 @@
 
 Repeat until you recall
 
-![](/screeenshots/cardEditor.png?raw=true)
+![](/screenshots/cardEditor.png?raw=true)

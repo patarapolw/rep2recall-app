@@ -1,0 +1,35 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title><%= title %></title>
+</head>
+
+<body>
+    <div id="nav-area">
+        <div id="nav-page-button">
+            <button id="prev-all" class="page-button">&lt;&lt;</button>
+            <button id="prev" class="page-button">&lt;</button>
+            <div id="page-label">
+                <div id="page-label-current">1</div>
+                <div id="page-label-of">of</div>
+                <div id="page-label-total">1</div>
+            </div>
+            <button id="next" class="page-button">&gt;</button>
+            <button id="next-all" class="page-button">&gt;&gt;</button>
+        </div>
+        <div class="nav-right">
+            <input id="search-bar" type="text" placeholder="Type here to search"></input>
+        </div>
+    </div>
+
+    <div id="hot-container">
+        <div id="hot-area"></div>
+    </div>
+
+    <script src="<%= js %>"></script>
+</body>
+
+</html>

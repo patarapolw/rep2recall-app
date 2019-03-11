@@ -22,6 +22,10 @@
     "css-loader": "^2.1.1",
     "dotenv": "^6.2.0",
     "ejs": "^2.6.1",
+    "ejs-loader": "^0.3.1",
+    "electron": "^4.0.8",
+    "electron-builder": "^20.38.5",
+    "electron-is-running-in-asar": "^1.0.0",
     "esm": "^3.2.10",
     "expose-loader": "^0.7.5",
     "express": "^4.16.4",
@@ -36,6 +40,7 @@
     "moment": "^2.24.0",
     "popper.js": "^1.14.7",
     "raw-loader": "^1.0.0",
+    "rimraf": "^2.6.3",
     "shortid": "^2.2.14",
     "showdown": "^1.9.0",
     "style-loader": "^0.23.1",
@@ -48,12 +53,31 @@
     "xregexp": "^4.2.4"
   },
   "scripts": {
-    "serve": "ts-node -r esm ./src/server.ts",
-    "build": "webpack --config webpack.prod.js",
-    "dev:serve": "ts-node-dev -r esm ./src/server.ts",
-    "dev:build": "webpack --watch --config webpack.dev.js"
+    "start": "electron ./dist/main.min.js",
+    "dev": "rimraf dist && webpack --watch --config ./webpack.dev.js --progress --colors",
+    "compile": "rimraf dist && webpack --config ./webpack.prod.js --progress --colors",
+    "build": "rimraf build && yarn run compile && electron-builder"
   },
-  "devDependencies": {
-    "ts-node-dev": "^1.0.0-pre.32"
+  "build": {
+    "appId": "io.github.patarapolw.rep2recall",
+    "directories": {
+      "output": "build"
+    },
+    "mac": {
+      "category": "public.app-category.education",
+      "icon": "icon.png"
+    },
+    "fileAssociations": [
+      {
+        "ext": "r2r",
+        "role": "Editor"
+      }
+    ],
+    "files": [
+      "dist/**/*",
+      "package.json",
+      "views/**/*",
+      "public/**/*"
+    ]
   }
 }

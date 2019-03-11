@@ -1,7 +1,12 @@
-const common = require("./webpack.common");
+const {mainConfig, rendererConfig} = require("./webpack.common");
 
-module.exports = {
-    ...common,
-    mode: "development",
-    devtool: "inline-source-map"
-};
+module.exports = [
+    {
+        ...mainConfig,
+        mode: "development"
+    },
+    {
+        ...rendererConfig,
+        mode: "development"
+    }
+];

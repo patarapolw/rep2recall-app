@@ -1,4 +1,4 @@
-import express, { Router } from "express";
+import express from "express";
 import { Db } from "./server/loki";
 import config from "./server/config";
 import bodyParser from "body-parser";
@@ -8,18 +8,21 @@ import deckRouter from "./server/routes/deck";
 import quizRouter from "./server/routes/quiz";
 import asyncHandler from "express-async-handler";
 import cors from "cors";
-import dotenv from "dotenv";
-dotenv.config();
+import path from "path";
+// @ts-ignore
+import ejs from "ejs";
 
-(async () => {
+export async function runserver() {
     const app = express();
-    const port = process.env.PORT || 41547;
 
     app.use(cors());
-    app.use(express.static("dist"));
-    app.use(express.static("public"));
+    app.use(express.static(path.join(__dirname, "../dist")));
+    app.use(express.static(path.join(__dirname, "../public")));
     app.use(bodyParser.json());
     app.set("view engine", "ejs");
+    app.engine("ejs", ejs.renderFile);
+    app.engine("html", ejs.renderFile);
+    app.set("views", path.join(__dirname, "../views"));
 
     if (process.env.DATABASE_PATH) {
         config.db = await Db.connect(process.env.DATABASE_PATH);
@@ -50,8 +53,17 @@ dotenv.config();
     });
 
     app.get("/", (req, res) => {
-        res.render("index");
+        res.render("deckViewer.html");
     });
 
-    app.listen(port, () => console.log(`App listening on port ${port}!`));
-})();
+    app.listen(config.port, () => {
+        console.log(`App listening on port ${config.port}!`);
+        process.send!({});
+    });
+}
+
+runserver();
+
+process.on("message", (msg) => {
+    Db.connect(msg.filename).then((db) => config.db = db);
+});

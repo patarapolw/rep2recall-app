@@ -1,14 +1,53 @@
 const path = require("path");
 
-module.exports = {
+const mainConfig = {
     entry: {
-        index: path.resolve(__dirname, "src/index.ts"),
-        cardEditor: path.resolve(__dirname, "src/cardEditor.ts"),
-        imageEditor: path.resolve(__dirname, "src/imageEditor.ts"),
+        main: path.resolve(__dirname, "src/main.ts"),
+        server: path.resolve(__dirname, "src/server.ts")
     },
+    target: 'electron-main',
     output: {
         path: path.resolve(__dirname, "dist"),
         filename: "[name].min.js"
+    },
+    node: {
+        __dirname: false,
+        __filename: false,
+    },
+    resolve: {
+        extensions: ['.js', '.json', '.ts']
+    },
+    module: {
+        rules: [
+            {
+                test: /\.ts$/,
+                exclude: /node_modules/,
+                use: {
+                    loader: 'ts-loader',
+                },
+            },
+            { test: /\.ejs$/, loader: 'ejs-loader?variable=data' },
+        ]
+    }
+};
+
+const rendererConfig = {
+    entry: {
+        deckViewer: path.resolve(__dirname, "src/deckViewer.ts"),
+        cardEditor: path.resolve(__dirname, "src/cardEditor.ts"),
+        imageEditor: path.resolve(__dirname, "src/imageEditor.ts"),
+    },
+    target: 'electron-renderer',
+    output: {
+        path: path.resolve(__dirname, "dist"),
+        filename: "[name].min.js"
+    },
+    node: {
+        __dirname: false,
+        __filename: false,
+    },
+    resolve: {
+        extensions: ['.js', '.json', '.ts', '.tsx'],
     },
     module: {
         rules: [
@@ -77,4 +116,8 @@ module.exports = {
             ".js"
         ]
     }
+};
+
+module.exports = {
+    mainConfig, rendererConfig
 };

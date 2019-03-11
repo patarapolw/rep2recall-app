@@ -5,7 +5,7 @@ import "jstree";
 import "jstree/dist/themes/default/style.min.css";
 import { fetchJSON, shuffle, md2html } from "./renderer/util";
 import uuid from "uuid/v4";
-import "./index.css";
+import "./deckViewer.css";
 
 const uuidToDeck = {} as any;
 

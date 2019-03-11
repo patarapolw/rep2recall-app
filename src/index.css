@@ -1,3 +1,8 @@
+html, body, #App, .height-100 {
+    height: 100%;
+    overflow: hidden;
+}
+
 .tree-new {
     color: green;
 }
@@ -7,5 +12,27 @@
 }
 
 .tree-due {
-    color: black;
+    color: blue;
+}
+
+.animate {
+    transition: all 0.4s linear;
+}
+
+.hidden {
+    display: none;
+}
+
+#DeckArea {
+    height: 100%;
+    overflow: scroll;
+}
+
+#QuizArea {
+    height: 100%;
+    overflow: scroll;
+}
+
+.border-right {
+    border-right: 1px solid black;
 }

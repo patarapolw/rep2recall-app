@@ -3,8 +3,7 @@ import "handsontable/dist/handsontable.min.css";
 import "./hot.css";
 import $ from "jquery";
 import yaml from "js-yaml";
-import showdown from "showdown";
-import { fetchJSON } from "./util";
+import { fetchJSON, md2html } from "./util";
 
 interface IPage {
     current: number;
@@ -26,8 +25,9 @@ export class HotEditor {
     private colHeaderSettings: any;
     private el: any;
 
-    constructor(apiEndPoint: string, colHeaders: string[], colWidths: number[],
-                dataModifier?: (x: any[]) => any[]) {
+    constructor(
+        apiEndPoint: string, colHeaders: string[], colWidths: number[],
+        dataModifier?: (x: any[]) => any[]) {
 
         this.apiEndPoint = apiEndPoint;
         this.colHeaders = colHeaders;
@@ -43,7 +43,7 @@ export class HotEditor {
             batchSize: 10
         };
         this.colHeaderSettings = colHeaders
-            .reduce((o, key) => ({ ...o, [key]: {type: "string"}}), {});
+            .reduce((o, key) => ({ ...o, [key]: { type: "string" } }), {});
 
         this.el = {
             searchBar: document.getElementById("search-bar") as HTMLInputElement,
@@ -208,26 +208,26 @@ export class HotEditor {
                                 fieldName,
                                 fieldData
                             }, "PUT")
-                            .then((r) => {
-                                if (typeof r === "object") {
-                                    [r] = this.dataModifier([r]);
+                                .then((r) => {
+                                    if (typeof r === "object") {
+                                        [r] = this.dataModifier([r]);
 
-                                    Object.keys(r).forEach((k) => {
-                                        const colNumber = colHeaders.indexOf(k);
-                                        if (colNumber !== -1) {
-                                            this.hot!.setDataAtCell(c[0], colNumber, r[k]);
-                                        }
-                                    });
-                                } else if (r === 201) {
-                                } else {
-                                    alert("Not modified");
+                                        Object.keys(r).forEach((k) => {
+                                            const colNumber = colHeaders.indexOf(k);
+                                            if (colNumber !== -1) {
+                                                this.hot!.setDataAtCell(c[0], colNumber, r[k]);
+                                            }
+                                        });
+                                    } else if (r === 201) {
+                                    } else {
+                                        alert("Not modified");
+                                        this.hot!.setDataAtCell(c[0], fieldName, oldData);
+                                    }
+                                })
+                                .catch((e) => {
+                                    alert(`Not modified: ${e}`);
                                     this.hot!.setDataAtCell(c[0], fieldName, oldData);
-                                }
-                            })
-                            .catch((e) => {
-                                alert(`Not modified: ${e}`);
-                                this.hot!.setDataAtCell(c[0], fieldName, oldData);
-                            });
+                                });
                         }
                     });
                 }
@@ -238,17 +238,17 @@ export class HotEditor {
                 }
 
                 const _id = this.hot!.getDataAtCell(index, 0);
-                fetchJSON(this.apiEndPoint, {_id}, "DELETE")
-                .then((r) => {
-                    if (r !== 201) {
-                        alert("Not modified");
+                fetchJSON(this.apiEndPoint, { _id }, "DELETE")
+                    .then((r) => {
+                        if (r !== 201) {
+                            alert("Not modified");
+                            // hot!.setDataAtCell(c[0], fieldEdited, c[2]);
+                        }
+                    })
+                    .catch((e) => {
+                        alert(`Not modified: ${e}`);
                         // hot!.setDataAtCell(c[0], fieldEdited, c[2]);
-                    }
-                })
-                .catch((e) => {
-                    alert(`Not modified: ${e}`);
-                    // hot!.setDataAtCell(c[0], fieldEdited, c[2]);
-                });
+                    });
 
                 return true;
             },
@@ -284,25 +284,14 @@ export class HotEditor {
     }
 }
 
-const mdMarkerRegex = /^@md[^\n]*\n(.+)/s;
-const mdConverter = new showdown.Converter();
-
 function wrappingRenderer(
-        instance: any, td: HTMLElement, row: any, col: any, prop: any, value: any, cellProperties: any) {
+    instance: any, td: HTMLElement, row: any, col: any, prop: any, value: any, cellProperties: any) {
+
     const escaped = Handsontable.helper.stringify(value);
     const cellWrapperDiv = document.createElement("div");
     cellWrapperDiv.className = "cell-wrapper";
 
-    mdMarkerRegex.lastIndex = 0;
-    const m = mdMarkerRegex.exec(escaped);
-
-    if (m) {
-        cellWrapperDiv.innerHTML = mdConverter.makeHtml(m[1]);
-    } else {
-        const cellWrapperPre = document.createElement("pre");
-        cellWrapperPre.innerText = escaped;
-        cellWrapperDiv.appendChild(cellWrapperPre);
-    }
+    cellWrapperDiv.innerHTML = md2html(escaped);
 
     td.innerHTML = "";
     td.appendChild(cellWrapperDiv);

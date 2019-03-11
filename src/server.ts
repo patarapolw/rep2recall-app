@@ -5,6 +5,7 @@ import bodyParser from "body-parser";
 import cardRouter from "./server/routes/card";
 import imageRouter from "./server/routes/image";
 import deckRouter from "./server/routes/deck";
+import quizRouter from "./server/routes/quiz";
 import asyncHandler from "express-async-handler";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -32,6 +33,7 @@ dotenv.config();
     app.use("/card", cardRouter);
     app.use("/img", imageRouter);
     app.use("/deck", deckRouter);
+    app.use("/quiz", quizRouter);
 
     app.get("/editor/card", (req, res) => {
         res.render("hot", {

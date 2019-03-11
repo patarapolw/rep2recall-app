@@ -48,6 +48,17 @@ module.exports = {
                 }]
             },
             {
+                test: /\.(png|jpg|gif)$/,
+                use: [
+                  {
+                    loader: 'file-loader',
+                    options: {
+                      name: '[path][name].[ext]',
+                    },
+                  },
+                ],
+              },
+            {
                 test: require.resolve("jquery"),
                 use: [{
                     loader: "expose-loader",

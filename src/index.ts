@@ -2,7 +2,8 @@ import "bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
 import $ from "jquery";
 import "jstree";
-import { fetchJSON } from "./renderer/util";
+import "jstree/dist/themes/default/style.min.css";
+import { fetchJSON, shuffle, md2html } from "./renderer/util";
 import uuid from "uuid/v4";
 import "./index.css";
 
@@ -41,61 +42,37 @@ const uuidToDeck = {} as any;
 
     $(() => {
         // @ts-ignore
-        $("#App").jstree({
-            core: {data}
+        $("#DeckArea").jstree({
+            core: {
+                data,
+                multiple: false
+            }
         })
         .bind("loaded.jstree", () => {
             // @ts-ignore
-            const jstree = $("#App").jstree(true);
+            const jstree = $("#DeckArea").jstree(true);
 
             Object.keys(uuidToDeck).forEach((id) => {
                 const node = jstree.get_node(id);
-
                 if (node.children.length === 0) {
-                    fetchJSON("/deck/stat", {deck: uuidToDeck[id]}).then((stat) => {
-                        $(`#${id}`).append(`
-                        <div class="tree-score float-right">
-                            <span class="tree-new">${stat.new}</span>
-                            &nbsp;
-                            <span class="tree-leech">${stat.leech}</span>
-                            &nbsp;
-                            <span class="tree-due">${stat.due}</span>
-                        </div>
-                        `);
-                    });
+                    nodeAddStat(id);
                 }
             });
         })
         .bind("after_open.jstree", (e: any, current: any) => {
             $(".tree-score", $(`#${current.node.id}`)).remove();
-            current.node.children.forEach((id: string) => {
-                fetchJSON("/deck/stat", {deck: uuidToDeck[id]}).then((stat) => {
-                    $(`#${id}`).append(`
-                    <div class="tree-score float-right">
-                        <span class="tree-new">${stat.new}</span>
-                        &nbsp;
-                        <span class="tree-leech">${stat.leech}</span>
-                        &nbsp;
-                        <span class="tree-due">${stat.due}</span>
-                    </div>
-                    `);
-                });
-            });
+            current.node.children.forEach((id: string) => nodeAddStat(id));
         })
         .bind("after_close.jstree", (e: any, current: any) => {
-            const id = current.node.id;
-
-            fetchJSON("/deck/stat", {deck: uuidToDeck[id]}).then((stat) => {
-                $(`#${id}`).append(`
-                <div class="tree-score float-right">
-                    <span class="tree-new">${stat.new}</span>
-                    &nbsp;
-                    <span class="tree-leech">${stat.leech}</span>
-                    &nbsp;
-                    <span class="tree-due">${stat.due}</span>
-                </div>
-                `);
-            });
+            nodeAddStat(current.node.id);
+        })
+        .bind("select_node.jstree", (e: any, current: any) => {
+            initQuiz(current.node.id);
+            $("#App").removeClass("container").addClass("container-fluid");
+            $("#DeckArea").removeClass("col-12").addClass("col-3").addClass("border-right");
+            setTimeout(() => {
+                $("#QuizArea").removeClass("hidden");
+            }, 400);
         });
     });
 })();
@@ -130,5 +107,94 @@ function recurseParseData(data: any[], deck: string[], _depth = 0) {
         });
 
         uuidToDeck[id] = deck.join("/");
+    }
+}
+
+function nodeAddStat(id: string) {
+    fetchJSON("/deck/stat", {deck: uuidToDeck[id]}).then((stat) => {
+        $(`#${id}`).append(`
+        <div class="tree-score float-right">
+            <span class="tree-new">${stat.new}</span>
+            &nbsp;
+            <span class="tree-leech">${stat.leech}</span>
+            &nbsp;
+            <span class="tree-due">${stat.due}</span>
+        </div>
+        `);
+    });
+}
+
+async function initQuiz(id: string) {
+    const deck = uuidToDeck[id];
+    const cards = await fetchJSON("/quiz/", {deck});
+    const quizAreaEl = document.getElementById("QuizArea") as HTMLDivElement;
+    const $quizArea = $(quizAreaEl);
+
+    $quizArea.html(`<div>${cards.length} entries to go...</div>`);
+    if (cards.length > 0) {
+        shuffle(cards);
+
+        while (cards.length > 0) {
+            const cardId = cards.splice(0, 1)[0];
+            const c = await fetchJSON("/quiz/render", {id: cardId});
+            const guid = uuid();
+
+            $quizArea.append(`
+            <div id="c-${guid}">
+                <div class="c-all">${md2html(c.front)}</div>
+                <div class="c-back">${md2html(c.back || "")}</div>
+                <div class="c-btn-list mt-3 mb-3">
+                    <button class="btn btn-primary c-front c-btn-show">Show</button>
+                    <button class="btn btn-success c-back c-btn-right">Right</button>
+                    <button class="btn btn-danger c-back c-btn-wrong">Wrong</button>
+                    <button class="btn btn-warning c-back c-btn-skip">Skip</button>
+                </div>
+            </div>
+            `);
+            quizAreaEl.scrollTo(0, quizAreaEl.scrollHeight);
+
+            const $parent = $(`#c-${guid}`);
+            $(".c-back", $parent).hide();
+            $(".c-btn-show", $parent).click(() => {
+                $(".c-front", $parent).hide();
+                $(".c-back", $parent).show();
+                quizAreaEl.scrollTo(0, quizAreaEl.scrollHeight);
+            });
+
+            await new Promise((resolve, reject) => {
+                $(".c-btn-right", $parent).click(() => {
+                    fetchJSON("/quiz/right", {id: cardId}, "PUT");
+                    resolve();
+                });
+
+                $(".c-btn-wrong", $parent).click(() => {
+                    fetchJSON("/quiz/wrong", {id: cardId}, "PUT");
+                    resolve();
+                });
+
+                $(".c-btn-skip", $parent).click(() => {
+                    resolve();
+                });
+            });
+
+            $(".c-btn-list", $parent).hide();
+        }
+
+        $quizArea.append(`<div>All done!</div>`);
+    } else {
+        const [nextHour, nextDay] = await Promise.all([
+            fetchJSON("/quiz/", {
+                deck,
+                due: [1, "hour"]
+            }),
+            fetchJSON("/quiz/", {
+                deck,
+                due: [1, "day"]
+            })
+        ]);
+
+        $quizArea.append(`
+        <div>Pending next hour: ${nextHour.length}</div>
+        <div>Pending next day: ${nextDay.length}</div>`);
     }
 }

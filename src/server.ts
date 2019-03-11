@@ -4,6 +4,7 @@ import config from "./server/config";
 import bodyParser from "body-parser";
 import cardRouter from "./server/routes/card";
 import imageRouter from "./server/routes/image";
+import deckRouter from "./server/routes/deck";
 import asyncHandler from "express-async-handler";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -30,6 +31,7 @@ dotenv.config();
 
     app.use("/card", cardRouter);
     app.use("/img", imageRouter);
+    app.use("/deck", deckRouter);
 
     app.get("/editor/card", (req, res) => {
         res.render("hot", {
@@ -43,6 +45,10 @@ dotenv.config();
             title: "Image Editor",
             js: "/imageEditor.min.js"
         });
+    });
+
+    app.get("/", (req, res) => {
+        res.render("index");
     });
 
     app.listen(port, () => console.log(`App listening on port ${port}!`));

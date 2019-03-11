@@ -2,6 +2,7 @@ const path = require("path");
 
 module.exports = {
     entry: {
+        index: path.resolve(__dirname, "src/index.ts"),
         cardEditor: path.resolve(__dirname, "src/cardEditor.ts"),
         imageEditor: path.resolve(__dirname, "src/imageEditor.ts"),
     },

@@ -2,6 +2,7 @@ import config from "../config";
 import { Request, Response, Router } from "express";
 import { ICard } from "../loki";
 import moment from "moment";
+import XRegExp from "xregexp";
 
 interface IExternalCard {
     guid?: string;
@@ -52,16 +53,18 @@ class CardController {
 
         let trueQuery: any = {};
         for (const k of Object.keys(query)) {
-            if (k === "any") {
+            if (k === "any" && typeof query[k] === "string") {
+                const regex = XRegExp.escape(query[k]);
+
                 trueQuery = {$or: [
-                    {deck: {$regex: query[k]}},
-                    {front: {$regex: query[k]}},
-                    {back: {$regex: query[k]}},
-                    {note: {$regex: query[k]}}
+                    {deck: {$regex: regex}},
+                    {front: {$regex: regex}},
+                    {back: {$regex: regex}},
+                    {note: {$regex: regex}}
                 ]};
                 break;
             } else if (typeof query[k] === "string") {
-                trueQuery[k] = {$regex: query[k]};
+                trueQuery[k] = {$regex: XRegExp.escape(query[k])};
             } else {
                 trueQuery[k] = query[k];
             }

@@ -9,14 +9,18 @@ class QuizController {
         const db = config.db!;
         const deck: string = req.body.deck;
         const duePair = req.body.due;
+        const tags: string[] = req.body.tags || [];
 
         const cards = db.card.eqJoin(db.deck, "deckId", "$loki", (l, r) => {
             const {$loki, nextReview} = l;
             return {
                 id: $loki,
                 nextReview,
-                deck: r.name
+                deck: r.name,
+                tags: l.tags || []
             };
+        }).where((d) => {
+            return tags.length > 0 ? (d.tags.length > 0 && tags.every((t: string) => d.tags.indexOf(t) !== -1)) : true;
         }).find({deck: {$regex: `${XRegExp.escape(deck)}(/.+)?`}}).data();
 
         const due = duePair ? moment().add(duePair[0], duePair[1]) : new Date();

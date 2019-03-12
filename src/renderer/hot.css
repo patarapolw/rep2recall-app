@@ -68,10 +68,6 @@ body {
     height: 0;
 }
 
-pre {
-    white-space: pre-wrap;
-}
-
 .cell-wrapper {
     max-width: 500px;
     max-height: 150px;

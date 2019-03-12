@@ -153,7 +153,7 @@ async function nodeAddStat(id: string): Promise<boolean> {
 
 async function initQuiz(id: string) {
     const deck = uuidToDeck[id];
-    const cards = await fetchJSON("/quiz/", {deck});
+    const cards = await fetchJSON("/quiz/", {deck, ...filter});
     const quizAreaEl = document.getElementById("QuizArea") as HTMLDivElement;
     const $quizArea = $(quizAreaEl);
 

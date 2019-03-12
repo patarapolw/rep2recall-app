@@ -3,7 +3,6 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import "./index.css";
 import { ipcRenderer, remote } from "electron";
 import { fetchJSON } from "./renderer/util";
-import config from "./server/config";
 
 const { dialog } = remote;
 
@@ -17,7 +16,7 @@ const { dialog } = remote;
 
     if (file) {
         fetchJSON("/connect", {filename: file})
-        .then(() => remote.getCurrentWindow().loadURL(`http://localhost:${config.port}/editor/card`));
+        .then(() => ipcRenderer.send("load-cardEditor", {}));
     }
 };
 
@@ -32,6 +31,6 @@ const { dialog } = remote;
 
     if (files) {
         fetchJSON("/connect", {filename: files[0]})
-        .then(() => remote.getCurrentWindow().loadURL(`http://localhost:${config.port}/deckViewer`));
+        .then(() => ipcRenderer.send("load-deckViewer", {}));
     }
 };

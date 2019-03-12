@@ -38,14 +38,14 @@ export async function runserver() {
     app.use("/deck", deckRouter);
     app.use("/quiz", quizRouter);
 
-    app.get("/editor/card", (req, res) => {
+    app.get("/cardEditor", (req, res) => {
         res.render("hot", {
             title: "Card Editor",
             js: "/cardEditor.min.js"
         });
     });
 
-    app.get("/editor/img", (req, res) => {
+    app.get("/imageEditor", (req, res) => {
         res.render("hot", {
             title: "Image Editor",
             js: "/imageEditor.min.js"

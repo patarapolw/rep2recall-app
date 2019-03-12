@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, MenuItemConstructorOptions } from "electron";
+import { app, BrowserWindow, Menu, MenuItemConstructorOptions, ipcMain } from "electron";
 import path from "path";
 // @ts-ignore
 import isAsar from "electron-is-running-in-asar";
@@ -24,7 +24,7 @@ function createWindow(filename?: string) {
     http.get(`http://localhost:${config.port}/`, (res) => {
         if (filename) {
             fetchJSON("/connect", {filename})
-            .then(() => mainWindow!.loadURL(`http://localhost:${config.port}/deckViewer`));
+            .then(() => loadView("deckViewer"));
         } else {
             mainWindow!.loadURL(`http://localhost:${config.port}/`);
         }
@@ -32,7 +32,7 @@ function createWindow(filename?: string) {
         serverProcess.on("message", () => {
             if (filename) {
                 fetchJSON("/connect", {filename})
-                .then(() => mainWindow!.loadURL(`http://localhost:${config.port}/deckViewer`));
+                .then(() => loadView("deckViewer"));
             } else {
                 mainWindow!.loadURL(`http://localhost:${config.port}/`);
             }
@@ -84,22 +84,25 @@ app.on("ready", () => {
             label: "View",
             submenu: [
                 {
+                    id: "deckViewer",
                     label: "Quiz",
-                    click() { mainWindow!.loadURL(`http://localhost:${config.port}/deckViewer`); }
-                    // enabled: (config.db !== undefined &&
-                    //     mainWindow!.webContents.getURL() !== `http://localhost:${config.port}/deckViewer`)
+                    click() { loadView("deckViewer"); },
+                    enabled: (config.db !== undefined &&
+                        mainWindow!.webContents.getURL() !== `http://localhost:${config.port}/deckViewer`)
                 },
                 {
+                    id: "cardEditor",
                     label: "Card editor",
-                    click() { mainWindow!.loadURL(`http://localhost:${config.port}/editor/card`); }
-                    // enabled: (config.db !== undefined &&
-                    //     mainWindow!.webContents.getURL() !== `http://localhost:${config.port}/editor/card`)
+                    click() { loadView("cardEditor"); },
+                    enabled: (config.db !== undefined &&
+                        mainWindow!.webContents.getURL() !== `http://localhost:${config.port}/cardEditor`)
                 },
                 {
+                    id: "imageEditor",
                     label: "Image editor",
-                    click() { mainWindow!.loadURL(`http://localhost:${config.port}/editor/image`); }
-                    // enabled: (config.db !== undefined &&
-                    //     mainWindow!.webContents.getURL() !== `http://localhost:${config.port}/editor/image`)
+                    click() { loadView("imageEditor"); },
+                    enabled: (config.db !== undefined &&
+                        mainWindow!.webContents.getURL() !== `http://localhost:${config.port}/imageEditor`)
                 }
             ]
         },
@@ -123,8 +126,24 @@ app.on("window-all-closed", () => {
     // }
 });
 
-// app.on("activate", () => {
-//     if (mainWindow === null) {
-//         createWindow();
-//     }
-// });
+ipcMain.on("load-deckViewer", () => {
+    loadView("deckViewer");
+});
+
+ipcMain.on("load-cardEditor", () => {
+    loadView("cardEditor");
+});
+
+function loadView(name: string) {
+    const appMenu = Menu.getApplicationMenu()!;
+    const viewMenus = [
+        appMenu.getMenuItemById("deckViewer"),
+        appMenu.getMenuItemById("cardEditor"),
+        appMenu.getMenuItemById("imageEditor")
+    ];
+
+    viewMenus.forEach((m) => m.enabled = true);
+    appMenu.getMenuItemById(name).enabled = false;
+
+    mainWindow!.loadURL(`http://localhost:${config.port}/${name}`);
+}

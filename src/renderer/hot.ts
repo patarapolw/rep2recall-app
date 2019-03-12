@@ -137,6 +137,14 @@ export class HotEditor {
         this.loadData(r.data);
 
         this.page.to = this.page.from - 1 + this.page.batchSize;
+        if (this.page.to > r.total) {
+            this.page.to = r.total;
+        }
+
+        if (r.total === 0) {
+            this.page.from = 0;
+        }
+
         this.page.total = r.total;
         this.page.count = Math.ceil(this.page.total / this.page.batchSize);
         this.setPageNav();
@@ -253,8 +261,10 @@ export class HotEditor {
                 return true;
             },
             afterCreateRow: () => {
+                this.page.from = this.page.from === 0 ? 1 : this.page.from;
                 this.page.to++;
                 this.page.total++;
+                this.setPageNav();
             }
         });
     }

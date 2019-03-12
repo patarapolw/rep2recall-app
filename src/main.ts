@@ -5,13 +5,13 @@ import isAsar from "electron-is-running-in-asar";
 import { fork } from "child_process";
 import config from "./server/config";
 import http from "http";
+import { fetchJSON } from "./renderer/util";
 
 const serverProcess = fork(path.join(__dirname, "server.min.js"));
 
 let mainWindow: Electron.BrowserWindow | null;
-let openedFilePath: string = "user/patho.r2r";
 
-function createWindow(filename: string) {
+function createWindow(filename?: string) {
     mainWindow = new BrowserWindow({
         height: 768,
         width: 1024,
@@ -22,12 +22,20 @@ function createWindow(filename: string) {
     mainWindow.maximize();
 
     http.get(`http://localhost:${config.port}/`, (res) => {
-        serverProcess.send({filename});
-        mainWindow!.loadURL(`http://localhost:${config.port}/`);
+        if (filename) {
+            fetchJSON("/connect", {filename})
+            .then(() => mainWindow!.loadURL(`http://localhost:${config.port}/deckViewer`));
+        } else {
+            mainWindow!.loadURL(`http://localhost:${config.port}/`);
+        }
     }).on("error", () => {
         serverProcess.on("message", () => {
-            serverProcess.send({filename});
-            mainWindow!.loadURL(`http://localhost:${config.port}/`);
+            if (filename) {
+                fetchJSON("/connect", {filename})
+                .then(() => mainWindow!.loadURL(`http://localhost:${config.port}/deckViewer`));
+            } else {
+                mainWindow!.loadURL(`http://localhost:${config.port}/`);
+            }
         });
     });
 
@@ -44,14 +52,12 @@ app.on("will-finish-launching", () => {
     app.on("open-file", (e, _path) => {
         if (app.isReady() && !mainWindow) {
             createWindow(_path);
-        } else {
-            openedFilePath = _path;
         }
     });
 });
 
 app.on("ready", () => {
-    createWindow(openedFilePath);
+    createWindow();
 
     const template: MenuItemConstructorOptions[] = [
         {

@@ -33,6 +33,7 @@ const mainConfig = {
 
 const rendererConfig = {
     entry: {
+        index: path.resolve(__dirname, "src/index.ts"),
         deckViewer: path.resolve(__dirname, "src/deckViewer.ts"),
         cardEditor: path.resolve(__dirname, "src/cardEditor.ts"),
         imageEditor: path.resolve(__dirname, "src/imageEditor.ts"),

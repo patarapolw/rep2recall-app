@@ -2,6 +2,8 @@
 
 Repeat until you can recall
 
+![](/screenshots/front.png?raw=true)
+
 ![](/screenshots/deck.png?raw=true)
 
 ![](/screenshots/quiz1.png?raw=true)

@@ -52,8 +52,12 @@ export async function runserver() {
         });
     });
 
-    app.get("/", (req, res) => {
+    app.get("/deckViewer", (req, res) => {
         res.render("deckViewer.html");
+    });
+
+    app.get("/", (req, res) => {
+        res.render("index.html");
     });
 
     app.listen(config.port, () => {

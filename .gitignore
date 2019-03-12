@@ -1,5 +1,6 @@
 dist/
 user/
+
 *.lock
 .vscode/
 logs
@@ -35,3 +36,5 @@ typings/
 .serverless/
 .fusebox/
 .dynamodb/
+
+build/

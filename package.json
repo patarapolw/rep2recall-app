@@ -1,6 +1,6 @@
 {
   "name": "rep2recall",
-  "version": "1.0.0-alpha2",
+  "version": "1.0.0-alpha3",
   "main": "dist/main.min.js",
   "description": "Repeat until you can recall",
   "author": {
@@ -82,7 +82,8 @@
       "dist/**/*",
       "package.json",
       "views/**/*",
-      "public/**/*"
+      "public/**/*",
+      "dist/node_modules/**/*"
     ]
   }
 }

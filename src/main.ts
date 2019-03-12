@@ -5,13 +5,13 @@ import isAsar from "electron-is-running-in-asar";
 import { fork } from "child_process";
 import config from "./server/config";
 import http from "http";
-import { fetchJSON } from "./renderer/util";
 
 const serverProcess = fork(path.join(__dirname, "server.min.js"));
 
 let mainWindow: Electron.BrowserWindow | null;
+let openedFilePath: string | null = null;
 
-function createWindow(filename?: string) {
+function createWindow(filename: string | null) {
     mainWindow = new BrowserWindow({
         height: 768,
         width: 1024,
@@ -21,23 +21,7 @@ function createWindow(filename?: string) {
     });
     mainWindow.maximize();
 
-    http.get(`http://localhost:${config.port}/`, (res) => {
-        if (filename) {
-            fetchJSON("/connect", {filename})
-            .then(() => loadView("deckViewer"));
-        } else {
-            mainWindow!.loadURL(`http://localhost:${config.port}/`);
-        }
-    }).on("error", () => {
-        serverProcess.on("message", () => {
-            if (filename) {
-                fetchJSON("/connect", {filename})
-                .then(() => loadView("deckViewer"));
-            } else {
-                mainWindow!.loadURL(`http://localhost:${config.port}/`);
-            }
-        });
-    });
+    loadStartPage(filename);
 
     if (!isAsar()) {
         mainWindow.webContents.openDevTools();
@@ -50,14 +34,18 @@ function createWindow(filename?: string) {
 
 app.on("will-finish-launching", () => {
     app.on("open-file", (e, _path) => {
-        if (app.isReady() && !mainWindow) {
+        if (mainWindow) {
+            loadStartPage(_path);
+        } else if (app.isReady() && !mainWindow) {
             createWindow(_path);
+        } else {
+            openedFilePath = _path;
         }
     });
 });
 
 app.on("ready", () => {
-    createWindow();
+    createWindow(openedFilePath);
 
     const template: MenuItemConstructorOptions[] = [
         {
@@ -133,6 +121,24 @@ ipcMain.on("load-deckViewer", () => {
 ipcMain.on("load-cardEditor", () => {
     loadView("cardEditor");
 });
+
+function loadStartPage(filename: string | null) {
+    http.get(`http://localhost:${config.port}/`, (res) => {
+        if (filename != null) {
+            serverProcess.send({filename}, () => loadView("deckViewer"));
+        } else {
+            mainWindow!.loadURL(`http://localhost:${config.port}/`);
+        }
+    }).on("error", () => {
+        serverProcess.on("message", () => {
+            if (filename != null) {
+                serverProcess.send({filename}, () => loadView("deckViewer"));
+            } else {
+                mainWindow!.loadURL(`http://localhost:${config.port}/`);
+            }
+        });
+    });
+}
 
 function loadView(name: string) {
     const appMenu = Menu.getApplicationMenu()!;

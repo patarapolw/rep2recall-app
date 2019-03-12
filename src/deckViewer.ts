@@ -2,7 +2,6 @@ import "bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
 import $ from "jquery";
 import "jstree";
-import "jstree/dist/themes/default/style.min.css";
 import { fetchJSON, shuffle, md2html } from "./renderer/util";
 import uuid from "uuid/v4";
 import "./deckViewer.css";

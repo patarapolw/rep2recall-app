@@ -8,6 +8,8 @@ Download: <https://github.com/patarapolw/rep2recall/releases>
 
 ![](/screenshots/deck.png?raw=true)
 
+![](/screenshots/deck1.png?raw=true)
+
 ![](/screenshots/quiz1.png?raw=true)
 
 ![](/screenshots/quiz2.png?raw=true)

@@ -78,32 +78,29 @@ class CardController {
     public static upsert(req: Request, res: Response): Response {
         const db = config.db!;
 
-        const {id, fieldName, fieldData} = req.body;
+// tslint:disable-next-line: prefer-const
+        let {id, fieldName, fieldData} = req.body;
         if (id) {
-            let trueData: any;
             if (fieldName === "deck") {
-                trueData = db.getOrCreateDeck(fieldData);
+                fieldData = db.getOrCreateDeck(fieldData);
+                fieldName = "deckId";
             } else if (fieldName === "nextReview") {
                 const m = moment(fieldData);
                 if (m.isValid()) {
-                    trueData = m.toDate();
+                    fieldData = m.toDate();
                 } else {
                     return res.sendStatus(304);
                 }
-            } else {
-                trueData = fieldData;
             }
 
             db.card.updateWhere((c) => c.$loki === id, (c) => {
-                (c as any)[fieldName] = trueData;
+                (c as any)[fieldName] = fieldData;
                 return c;
             });
         } else if (fieldName === "front") {
-            const trueData: string = fieldData;
-
             const $loki = db.card.insertOne({
                 deckId: db.getOrCreateDeck("default"),
-                front: trueData
+                front: fieldData
             })!.$loki;
 
             return res.json({

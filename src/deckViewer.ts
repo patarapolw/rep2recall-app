@@ -12,29 +12,19 @@ const uuidToDeck = {} as any;
     const deckList: string[] = (await fetchJSON("/deck/")).decks;
     const deckWithSubDecks: string[] = [];
 
-    let i = 0;
-    let filled: boolean[] = [];
-    while (filled.every((el) => el)) {
-        filled = [];
-
-        deckList.forEach((d) => {
-            const deck = d.split("/");
-            if (i < deck.length) {
-                const name = deck.slice(0, i + 1).join("/");
-                if (deckWithSubDecks.indexOf(name) === -1) {
-                    deckWithSubDecks.push(name);
-                }
-            } else {
-                filled.push(false);
+    deckList.sort().forEach((d) => {
+        const deck = d.split("/");
+        deck.forEach((seg, i) => {
+            const subDeck = deck.slice(0, i + 1).join("/");
+            if (deckWithSubDecks.indexOf(subDeck) === -1) {
+                deckWithSubDecks.push(subDeck);
             }
         });
-
-        i++;
-    }
+    });
 
     const data = [] as any[];
 
-    deckWithSubDecks.sort().forEach((d) => {
+    deckWithSubDecks.forEach((d) => {
         const deck = d.split("/");
         recurseParseData(data, deck);
     });
@@ -109,18 +99,20 @@ function recurseParseData(data: any[], deck: string[], _depth = 0) {
     }
 }
 
-function nodeAddStat(id: string) {
-    fetchJSON("/deck/stat", {deck: uuidToDeck[id]}).then((stat) => {
-        $(`#${id}`).append(`
-        <div class="tree-score float-right">
-            <span class="tree-new">${stat.new}</span>
-            &nbsp;
-            <span class="tree-leech">${stat.leech}</span>
-            &nbsp;
-            <span class="tree-due">${stat.due}</span>
-        </div>
-        `);
-    });
+async function nodeAddStat(id: string): Promise<boolean> {
+    const stat = await fetchJSON("/deck/stat", {deck: uuidToDeck[id]});
+
+    $(`#${id}`).append(`
+    <div class="tree-score float-right">
+        <span class="tree-new">${stat.new}</span>
+        &nbsp;
+        <span class="tree-leech">${stat.leech}</span>
+        &nbsp;
+        <span class="tree-due">${stat.due}</span>
+    </div>
+    `);
+
+    return true;
 }
 
 async function initQuiz(id: string) {

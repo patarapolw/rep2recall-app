@@ -5,8 +5,12 @@ import XRegExp from "xregexp";
 class DeckController {
     public static find(req: Request, res: Response): Response {
         const db = config.db!;
-        const decks = db.deck.find().map((deck) => deck.name);
-        return res.json({decks});
+        const decks = db.card.eqJoin(db.deck, "deckId", "$loki", (l, r) => {
+            return {
+                deck: r.name
+            };
+        }).data().map((d) => d.deck);
+        return res.json({decks: decks.filter((d, i) => decks.indexOf(d) === i)});
     }
 
     public static stat(req: Request, res: Response): Response {

@@ -50,14 +50,22 @@ class CardController {
         const offset: number = req.body.offset;
         const limit: number = req.body.limit;
 
-        const trueQuery = {} as any;
-        Object.keys(query).forEach((k) => {
-            if (typeof query[k] === "string") {
+        let trueQuery: any = {};
+        for (const k of Object.keys(query)) {
+            if (k === "any") {
+                trueQuery = {$or: [
+                    {deck: {$regex: query[k]}},
+                    {front: {$regex: query[k]}},
+                    {back: {$regex: query[k]}},
+                    {note: {$regex: query[k]}}
+                ]};
+                break;
+            } else if (typeof query[k] === "string") {
                 trueQuery[k] = {$regex: query[k]};
             } else {
                 trueQuery[k] = query[k];
             }
-        });
+        }
 
         const q = db.card.eqJoin(db.deck, "deckId", "$loki", (l, r) => {
             const {$loki, front, back, note, srsLevel, nextReview, tags} = l;
@@ -66,7 +74,7 @@ class CardController {
                 front, back, note, srsLevel, nextReview, tags,
                 deck: r.name
             };
-        }).find(trueQuery);
+        }).find(trueQuery).simplesort("deck");
         const total = q.copy().count();
 
         return res.json({
@@ -91,6 +99,8 @@ class CardController {
                 } else {
                     return res.sendStatus(304);
                 }
+            } else if (fieldName === "tags") {
+                fieldData = fieldData.split("\n").filter((t: string) => t);
             }
 
             db.card.updateWhere((c) => c.$loki === id, (c) => {

@@ -6,10 +6,38 @@ import { fetchJSON, shuffle, md2html } from "./renderer/util";
 import uuid from "uuid/v4";
 import "./deckViewer.css";
 
-const uuidToDeck = {} as any;
+interface IFilter {
+    tags: string[];
+}
 
-(async () => {
-    const deckList: string[] = (await fetchJSON("/deck/")).decks;
+let uuidToDeck = {} as any;
+let jstree: any = null;
+let filter: IFilter = {
+    tags: []
+};
+
+loadJstree();
+
+(document.getElementById("search-bar") as HTMLInputElement).addEventListener("keyup", () => {
+    const value = (document.getElementById("search-bar") as HTMLInputElement).value;
+    filter = {
+        tags: value.split(" ").filter((t) => t)
+    };
+    loadJstree();
+});
+
+async function loadJstree() {
+    const deckList: string[] = (await fetchJSON("/deck/", filter)).decks;
+    if (deckList.length === 0) {
+        return;
+    }
+
+    if (jstree) {
+        uuidToDeck = {} as any;
+        $("#DeckArea").html("");
+        jstree.destroy();
+    }
+
     const deckWithSubDecks: string[] = [];
 
     deckList.sort().forEach((d) => {
@@ -36,11 +64,12 @@ const uuidToDeck = {} as any;
                 data,
                 multiple: false
             }
-        })
-        .bind("loaded.jstree", () => {
-            // @ts-ignore
-            const jstree = $("#DeckArea").jstree(true);
+        });
 
+        // @ts-ignore
+        jstree = $("#DeckArea").jstree(true);
+
+        $("#DeckArea").bind("loaded.jstree", () => {
             Object.keys(uuidToDeck).forEach((id) => {
                 const node = jstree.get_node(id);
                 if (node.children.length === 0) {
@@ -50,7 +79,11 @@ const uuidToDeck = {} as any;
         })
         .bind("after_open.jstree", (e: any, current: any) => {
             $(".tree-score", $(`#${current.node.id}`)).remove();
-            current.node.children.forEach((id: string) => nodeAddStat(id));
+            current.node.children_d.forEach((id: string) => {
+                if (!jstree.get_node(id).state.opened) {
+                    nodeAddStat(id);
+                }
+            });
         })
         .bind("after_close.jstree", (e: any, current: any) => {
             nodeAddStat(current.node.id);
@@ -58,13 +91,13 @@ const uuidToDeck = {} as any;
         .bind("select_node.jstree", (e: any, current: any) => {
             initQuiz(current.node.id);
             $("#App").removeClass("container").addClass("container-fluid");
-            $("#DeckArea").removeClass("col-12").addClass("col-3").addClass("border-right");
+            $("#DeckColumn").removeClass("col-12").addClass("col-3").addClass("border-right");
             setTimeout(() => {
                 $("#QuizArea").removeClass("hidden");
             }, 400);
         });
     });
-})();
+}
 
 function recurseParseData(data: any[], deck: string[], _depth = 0) {
     let doLoop = true;
@@ -100,7 +133,10 @@ function recurseParseData(data: any[], deck: string[], _depth = 0) {
 }
 
 async function nodeAddStat(id: string): Promise<boolean> {
-    const stat = await fetchJSON("/deck/stat", {deck: uuidToDeck[id]});
+    const stat = await fetchJSON("/deck/stat", {
+        deck: uuidToDeck[id],
+        ...filter
+    });
 
     $(`#${id}`).append(`
     <div class="tree-score float-right">

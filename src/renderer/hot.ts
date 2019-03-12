@@ -22,7 +22,6 @@ export class HotEditor {
 
     private hot?: Handsontable;
     private page: IPage;
-    private colHeaderSettings: any;
     private el: any;
 
     constructor(
@@ -42,8 +41,6 @@ export class HotEditor {
             total: 0,
             batchSize: 10
         };
-        this.colHeaderSettings = colHeaders
-            .reduce((o, key) => ({ ...o, [key]: { type: "string" } }), {});
 
         this.el = {
             searchBar: document.getElementById("search-bar") as HTMLInputElement,
@@ -58,7 +55,7 @@ export class HotEditor {
             navArea: document.getElementById("nav-area") as HTMLDivElement
         };
 
-        this.fetchCurrentPage();
+        this.fetchCurrentPage({});
 
         document.body.addEventListener("keydown", (e) => {
             e = e || window.event;
@@ -81,13 +78,11 @@ export class HotEditor {
                     this.page.current = 1;
                     this.fetchCurrentPage(cond);
                 } else {
-                    throw new Error("YAML error");
+                    this.fetchCurrentPage({any: s});
                 }
             } catch (e) {
-                if (s === "") {
-                    this.page.current = 1;
-                    this.fetchCurrentPage();
-                }
+                this.page.current = 1;
+                this.fetchCurrentPage({any: s});
             }
         });
 
@@ -125,11 +120,11 @@ export class HotEditor {
         });
     }
 
-    private async fetchCurrentPage(query?: any) {
+    private async fetchCurrentPage(query: any) {
         this.page.from = (this.page.current - 1) * this.page.batchSize + 1;
 
         const r = await fetchJSON(`${this.apiEndPoint}`, {
-            query: query || {},
+            query,
             offset: this.page.from - 1,
             limit: this.page.batchSize
         });
@@ -171,7 +166,6 @@ export class HotEditor {
                 const d = item[colName];
 
                 if (Array.isArray(d)) {
-                    this.colHeaderSettings[colName].type = "array";
                     return d.join("\n");
                 } else {
                     return d;
@@ -202,14 +196,7 @@ export class HotEditor {
                             const id = this.hot!.getDataAtCell(c[0], 0);
                             const fieldName = colHeaders[c[1] as number];
                             const oldData = c[2];
-                            const _fieldData = c[3];
-
-                            let fieldData: string[] | string;
-                            if (this.colHeaderSettings[fieldName].type === "array") {
-                                fieldData = _fieldData.toString().split("\n");
-                            } else {
-                                fieldData = _fieldData;
-                            }
+                            const fieldData = c[3];
 
                             fetchJSON(this.apiEndPoint, {
                                 id,
@@ -277,10 +264,10 @@ export class HotEditor {
             if (typeof cond === "object") {
                 this.fetchCurrentPage(cond);
             } else {
-                throw new Error("YAML error");
+                this.fetchCurrentPage({any: s});
             }
         } catch (e) {
-            this.fetchCurrentPage();
+            this.fetchCurrentPage({any: s});
         }
     }
 

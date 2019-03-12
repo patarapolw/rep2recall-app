@@ -15,6 +15,7 @@
     "dotenv": "^6.2.0",
     "ejs": "^2.6.1",
     "ejs-loader": "^0.3.1",
+    "electron-is-running-in-asar": "^1.0.0",
     "expose-loader": "^0.7.5",
     "express": "^4.16.4",
     "express-async-handler": "^1.1.4",
@@ -30,13 +31,9 @@
     "shortid": "^2.2.14",
     "showdown": "^1.9.0",
     "uuid": "^3.3.2",
-    "xregexp": "^4.2.4",
-    "electron-is-running-in-asar": "^1.0.0"
+    "xregexp": "^4.2.4"
   },
   "devDependencies": {
-    "rimraf": "^2.6.3",
-    "raw-loader": "^1.0.0",
-    "css-loader": "^2.1.1",
     "@types/cors": "^2.8.4",
     "@types/dotenv": "^6.1.0",
     "@types/express": "^4.16.1",
@@ -49,13 +46,16 @@
     "@types/showdown": "^1.9.2",
     "@types/uuid": "^3.4.4",
     "@types/xregexp": "^3.0.29",
-    "webpack": "^4.29.6",
-    "webpack-cli": "^3.2.3",
+    "css-loader": "^2.1.1",
+    "electron": "^4.0.8",
+    "electron-builder": "^20.38.5",
+    "raw-loader": "^1.0.0",
+    "rimraf": "^2.6.3",
     "style-loader": "^0.23.1",
     "ts-loader": "^5.3.3",
     "typescript": "^3.3.3333",
-    "electron": "^4.0.8",
-    "electron-builder": "^20.38.5"
+    "webpack": "^4.29.6",
+    "webpack-cli": "^3.2.3"
   },
   "scripts": {
     "start": "electron ./dist/main.min.js",

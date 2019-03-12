@@ -130,7 +130,7 @@ export class HotEditor {
 
         const r = await fetchJSON(`${this.apiEndPoint}`, {
             query: query || {},
-            offset: this.page.from,
+            offset: this.page.from - 1,
             limit: this.page.batchSize
         });
 

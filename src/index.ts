@@ -16,7 +16,7 @@ const { dialog } = remote;
 
     if (file) {
         fetchJSON("/connect", {filename: file})
-        .then(() => ipcRenderer.send("load-cardEditor", {}));
+        .then(() => ipcRenderer.send("load-cardEditor"));
     }
 };
 
@@ -31,6 +31,6 @@ const { dialog } = remote;
 
     if (files) {
         fetchJSON("/connect", {filename: files[0]})
-        .then(() => ipcRenderer.send("load-deckViewer", {}));
+        .then(() => ipcRenderer.send("load-deckViewer"));
     }
 };

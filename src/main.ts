@@ -81,6 +81,29 @@ app.on("ready", () => {
             ]
         },
         {
+            label: "View",
+            submenu: [
+                {
+                    label: "Quiz",
+                    click() { mainWindow!.loadURL(`http://localhost:${config.port}/deckViewer`); }
+                    // enabled: (config.db !== undefined &&
+                    //     mainWindow!.webContents.getURL() !== `http://localhost:${config.port}/deckViewer`)
+                },
+                {
+                    label: "Card editor",
+                    click() { mainWindow!.loadURL(`http://localhost:${config.port}/editor/card`); }
+                    // enabled: (config.db !== undefined &&
+                    //     mainWindow!.webContents.getURL() !== `http://localhost:${config.port}/editor/card`)
+                },
+                {
+                    label: "Image editor",
+                    click() { mainWindow!.loadURL(`http://localhost:${config.port}/editor/image`); }
+                    // enabled: (config.db !== undefined &&
+                    //     mainWindow!.webContents.getURL() !== `http://localhost:${config.port}/editor/image`)
+                }
+            ]
+        },
+        {
             label: "Settings",
             submenu: [
                 { label: "Preferences", click() {

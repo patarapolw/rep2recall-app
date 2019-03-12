@@ -1,6 +1,8 @@
 # rep2recall
 
-Repeat until you can recall
+Repeat until you can recall, as a Desktop app.
+
+Download: <https://github.com/patarapolw/rep2recall/releases>
 
 ![](/screenshots/front.png?raw=true)
 
@@ -11,3 +13,10 @@ Repeat until you can recall
 ![](/screenshots/quiz2.png?raw=true)
 
 ![](/screenshots/cardEditor.png?raw=true)
+
+## Features
+
+- File-based
+- Can be a single file, or can have a folder of images alongside (e.g. `filename.r2r` and `filename/image.png`)
+- Exposed API, can add cards via programming. The port is `41547` (can be set via environmental variable).
+- Decks, subdecks, tags supported

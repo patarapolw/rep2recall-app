@@ -1,12 +1,25 @@
-const {mainConfig, rendererConfig} = require("./webpack.common");
+const { web } = require("./webpack.common");
+const waitOn = require("wait-on");
+const open = require("open");
+const dotenv = require("dotenv");
+dotenv.config();
 
-module.exports = [
-    {
-        ...mainConfig,
-        mode: "development"
+module.exports = {
+    mode: "development",
+    devtool: "inline-source-map",
+    entry: {
+        index: "./src/web/index.ts"
     },
-    {
-        ...rendererConfig,
-        mode: "development"
-    }
-];
+    ...web,
+    plugins: [
+        {
+            apply: (compiler) => {
+                compiler.hooks.compile.tap("open-browser", () => {
+                    waitOn({resources: [`http://localhost:${process.env.PORT}`]}).then(() => {
+                        open(`http://localhost:${process.env.PORT}`)
+                    });
+                })
+            }
+        }
+    ]
+};

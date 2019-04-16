@@ -36,5 +36,6 @@ typings/
 .serverless/
 .fusebox/
 .dynamodb/
-
 build/
+user/
+user.*

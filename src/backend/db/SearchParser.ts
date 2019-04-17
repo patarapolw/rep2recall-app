@@ -103,6 +103,17 @@ export class LokiSearchParser {
 
                 const result = {} as any;
 
+                if (k === "is") {
+                    if (v === "due") {
+                        k = "nextReview";
+                        op = "<=";
+                        v = "now";
+                    } else if (v === "leech") {
+                        k = "srsLevel";
+                        v = 0;
+                    }
+                }
+
                 if (v === "NULL") {
                     return {$or: [
                         {[k]: ""},

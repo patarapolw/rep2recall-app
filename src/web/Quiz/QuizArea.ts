@@ -56,7 +56,7 @@ export default class QuizArea extends Vue {
         const cardIds = await fetchJSON(globalState.quizApi, {deck: this.state.currentDeck, q: this.state.q});
         this.isQuizStarted = false;
 
-        $quizArea.html(h("div", `${cardIds.length} entries to go...`).outerHTML);
+        $quizArea.html(h("div", `${cardIds.length.toLocaleString()} entries to go...`).outerHTML);
         if (cardIds.length > 0) {
             shuffle(cardIds);
 
@@ -127,8 +127,8 @@ export default class QuizArea extends Vue {
             ]);
 
             $quizArea.append(h("div", [
-                h("div", `Pending next hour: ${nextHour.length}`),
-                h("div", `Pending next day: ${nextDay.length}`)
+                h("div", `Pending next hour: ${nextHour.length.toLocaleString()}`),
+                h("div", `Pending next day: ${nextDay.length.toLocaleString()}`)
             ]));
         }
     }

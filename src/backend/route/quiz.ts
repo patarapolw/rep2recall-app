@@ -4,6 +4,7 @@ import Config from "../config";
 import QuizResource from "../db/QuizResource";
 import XRegExp from "xregexp";
 import mustache from "mustache";
+import moment from "moment";
 
 class QuizController {
     public static build(req: Request, res: Response): Response {
@@ -14,11 +15,17 @@ class QuizController {
             cond.deck = {$regex: `${XRegExp.escape(req.body.deck)}(/.+)?`};
         }
 
-        const nowStr = new Date().toISOString();
+        const q = rSearch.getQuery(cond);
+        let cards;
 
-        const cards = rSearch.getQuery(cond).where((c) => {
-            return !c.nextReview || c.nextReview < nowStr;
-        }).data();
+        if (req.body.due) {
+            const d: any[] = req.body.due;
+            cards = q.where((c) => c.nextReview < moment().add(d[0], d[1]).toISOString()).data();
+        } else {
+            cards = q.where((c) => {
+                return !c.nextReview || c.nextReview < moment().toISOString();
+            }).data();
+        }
 
         return res.json(cards.map((c) => c.id));
     }

@@ -4,6 +4,8 @@ const open = require("open");
 const dotenv = require("dotenv");
 dotenv.config();
 
+let isFirstEmit = true;
+
 module.exports = {
     mode: "development",
     devtool: "inline-source-map",
@@ -15,9 +17,12 @@ module.exports = {
         {
             apply: (compiler) => {
                 compiler.hooks.compile.tap("open-browser", () => {
-                    waitOn({resources: [`http://localhost:${process.env.PORT}`]}).then(() => {
-                        open(`http://localhost:${process.env.PORT}`)
-                    });
+                    if (isFirstEmit) {
+                        waitOn({ resources: [`http://localhost:${process.env.PORT}`] }).then(() => {
+                            open(`http://localhost:${process.env.PORT}`)
+                            isFirstEmit = false;
+                        });
+                    }
                 })
             }
         }

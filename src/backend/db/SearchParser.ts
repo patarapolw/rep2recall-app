@@ -111,6 +111,9 @@ export class LokiSearchParser {
                     } else if (v === "leech") {
                         k = "srsLevel";
                         v = 0;
+                    } else if (v === "new") {
+                        k = "srsLevel";
+                        v = "NULL";
                     }
                 }
 

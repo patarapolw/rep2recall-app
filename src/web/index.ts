@@ -7,7 +7,6 @@ import Quiz from "./Quiz/Quiz";
 import BootstrapVue from "bootstrap-vue";
 import "bootstrap";
 import CardEditor from "./DbEditor/CardEditor";
-import TemplateEditor from "./DbEditor/TemplateEditor";
 import ImportExport from "./ImportExport";
 import m from "hyperscript";
 import "./contextmenu";
@@ -19,8 +18,7 @@ const router = new VueRouter({
     routes: [
         {name: "default", path: "/", component: Quiz},
         {name: "quiz", path: "/quiz", component: Quiz},
-        {name: "cardEditor", path: "/editor/card", component: CardEditor},
-        {name: "templateEditor", path: "/editor/template", component: TemplateEditor},
+        {name: "cardEditor", path: "/editor", component: CardEditor},
         {name: "importExport", path: "/importExport", component: ImportExport}
     ]
 });
@@ -44,18 +42,10 @@ const app = new Vue({
                     }, [
                         m("router-link.nav-link", {attrs: {to: "/quiz"}}, "Quiz")
                     ]),
-                    m("li.nav-item.dropdown", [
-                        m("a.nav-link.dropdown-toggle#editorDropdown", {
-                            "href": "#",
-                            "role": "button",
-                            "data-toggle": "dropdown",
-                            "aria-haspopup": "true",
-                            "aria-expanded": "true"
-                        }, "Editor"),
-                        m("div.dropdown-menu", {"aria-labelledby": "editorDropdown"}, [
-                            m("router-link.dropdown-item", {attrs: {to: "/editor/card"}}, "Card"),
-                            m("router-link.dropdown-item", {attrs: {to: "/editor/template"}}, "Template")
-                        ])
+                    m("li", {
+                        class: "['nav-item', $route.path === '/editor' ? 'active' : '']"
+                    }, [
+                        m("router-link.nav-link", {attrs: {to: "/editor"}}, "Editor")
                     ]),
                     m("li", {
                         class: "['nav-item', $route.path === '/importExport' ? 'active' : '']"

@@ -1,66 +1,59 @@
 import sql from "sql.js";
 import fs from "fs";
-import unzipper from "unzipper";
-// @ts-ignore;
-import etl from "etl";
+import AdmZip from "adm-zip";
 import path from "path";
-import Db, { ITemplate, IEntry, INote } from ".";
+import Db, { ITemplate, IEntry, IMedia } from ".";
 import mustache from "mustache";
-import tmp from "tmp";
 import crypto from "crypto";
-import { Readable, Stream } from "stream";
+import { UploadedFile } from "express-fileupload";
+import tmp from "tmp";
 
 export default class Anki {
-    public static async connect(b: string | Buffer) {
-        let media = {} as any;
-        const dir = tmp.dirSync();
+    private db: sql.Database;
+    private mediaNameToId: any = {};
+    private upload: UploadedFile;
+    private dir: string;
+    private callback: (res: any) => any;
 
-        await new Promise((resolve) => {
-            let stream: Stream;
-            if (typeof b === "string") {
-                stream = fs.createReadStream(b);
-            } else {
-                stream = new Readable({
-                    read() {
-                        this.push(b);
-                        this.push(null);
-                    }
-                });
-            }
+    constructor(upload: UploadedFile, callback: (res: any) => any) {
+        this.upload = upload;
+        this.dir = tmp.dirSync().name;
+        this.callback = callback;
 
-            stream
-                .pipe(unzipper.Parse())
-                .pipe(etl.map(async (entry: any) => {
-                    if (entry.path === "media") {
-                        media = JSON.parse((await entry.buffer()).toString());
-                    } else {
-                        fs.writeFileSync(path.join(dir.name, entry.path), await entry.buffer());
-                    }
-                }))
-                .on("finish", resolve);
+        const zip = new AdmZip(upload.data);
+        const zipCount = zip.getEntries().length;
+
+        this.callback({
+            status: `Unzipping Apkg. File count: ${zipCount}`
         });
 
-        const db = new sql.Database(fs.readFileSync(path.join(dir.name, "collection.anki2")));
+        zip.extractAllTo(this.dir);
+
+        this.callback({
+            status: "Preparing Anki resources."
+        });
+
+        this.db = new sql.Database(fs.readFileSync(path.join(this.dir, "collection.anki2")));
 
         const { decks, models } = (() => {
-            const st = db.prepare("SELECT decks, models FROM col");
+            const st = this.db.prepare("SELECT decks, models FROM col");
             st.step();
             return st.getAsObject();
         })();
 
-        db.run(`
+        this.db.run(`
         CREATE TABLE decks (
             id      INTEGER NOT NULL PRIMARY KEY,
             name    VARCHAR NOT NULL
         )`);
 
-        const stmt = db.prepare("INSERT INTO decks (id, name) VALUES (?, ?)");
+        const stmt = this.db.prepare("INSERT INTO decks (id, name) VALUES (?, ?)");
 
         Object.values(JSON.parse(decks as string)).forEach((deck: any) => {
             stmt.run([deck.id, deck.name]);
         });
 
-        db.run(`
+        this.db.run(`
         CREATE TABLE models (
             id      INTEGER NOT NULL PRIMARY KEY,
             name    VARCHAR NOT NULL,
@@ -68,7 +61,7 @@ export default class Anki {
             css     VARCHAR
         )`);
 
-        db.run(`
+        this.db.run(`
         CREATE TABLE templates (
             id      INTEGER PRIMARY KEY AUTOINCREMENT,
             mid     INTEGER REFERENCES model(id),
@@ -77,8 +70,8 @@ export default class Anki {
             afmt    VARCHAR
         )`);
 
-        const modelInsertStmt = db.prepare("INSERT INTO models (id, name, flds, css) VALUES (?, ?, ?, ?)");
-        const templateInsertStmt = db.prepare("INSERT INTO templates (mid, name, qfmt, afmt) VALUES (?, ?, ?, ?)");
+        const modelInsertStmt = this.db.prepare("INSERT INTO models (id, name, flds, css) VALUES (?, ?, ?, ?)");
+        const templateInsertStmt = this.db.prepare("INSERT INTO templates (mid, name, qfmt, afmt) VALUES (?, ?, ?, ?)");
 
         Object.values(JSON.parse(models as string)).forEach((model: any) => {
             modelInsertStmt.run([model.id, model.name, model.flds.map((f: any) => f.name).join("\x1f"), model.css]);
@@ -87,21 +80,52 @@ export default class Anki {
                 templateInsertStmt.run([model.id, t.name, t.qfmt, t.afmt]);
             });
         });
-
-        return new Anki({ media, db, dir });
     }
 
-    public db: sql.Database;
-    public media: any;
-    private dir: tmp.DirResult;
+    public export(dst: Db) {
+        this.callback({
+            status: "Writing to database"
+        });
 
-    private constructor({ media, db, dir }: any) {
-        this.dir = dir;
-        this.media = media;
-        this.db = db;
-    }
+        const sourceId = dst.source.insertOne({
+            name: this.upload.name,
+            h: md5hasher(this.upload.data),
+            created: new Date()
+        }).$loki;
 
-    public async export(db: Db) {
+        this.mediaNameToId = {} as any;
+
+        const mediaJson = JSON.parse(fs.readFileSync(path.join(this.dir, "media"), "utf8"));
+
+        Object.keys(mediaJson).forEach((k, i) => {
+            const data = fs.readFileSync(path.join(this.dir, k));
+            const h = md5hasher(data);
+            const media = {
+                sourceId,
+                name: mediaJson[k],
+                data,
+                h
+            } as IMedia;
+
+            const total = Object.keys(mediaJson).length;
+            this.callback({
+                status: "Uploading media",
+                progress: {
+                    from: i,
+                    total
+                }
+            });
+
+            let mediaId;
+            try {
+                mediaId = dst.media.insert(media).$loki;
+            } catch (e) {
+                mediaId = dst.media.findOne({h}).$loki;
+            }
+
+            this.mediaNameToId[media.name] = mediaId;
+        });
+
         const templates = [] as ITemplate[];
 
         (() => {
@@ -113,21 +137,39 @@ export default class Anki {
             while (stmt.step()) {
                 const { tname, mname, qfmt, afmt, css } = stmt.getAsObject();
                 templates.push({
-                    name: `${mname}-${tname}`,
-                    front: convertLink(qfmt as string),
-                    back: convertLink(afmt as string),
-                    css: convertLink(css as string)
+                    name: tname as string,
+                    model: mname as string,
+                    front: this.convertLink(qfmt as string),
+                    back: this.convertLink(afmt as string),
+                    css: this.convertLink(css as string),
+                    sourceId
                 });
             }
         })();
 
-        db.template.insert(templates);
+        (() => {
+            const batch = 1000;
+            const total = templates.length;
+            let subList = templates.splice(0, batch);
+            let from = 0;
+
+            while (subList.length > 0) {
+                this.callback({
+                    status: "Uploading templates",
+                    progress: {
+                        from,
+                        total
+                    }
+                });
+
+                dst.template.insert(subList);
+                subList = templates.splice(0, batch);
+                from += batch;
+            }
+        })();
 
         const entries = [] as IEntry[];
-        const notes = [] as INote[];
-
         const _e = [] as string[];
-        const _n = [] as string[];
 
         (() => {
             const stmt = this.db.prepare(`
@@ -147,32 +189,24 @@ export default class Anki {
 
             while (stmt.step()) {
                 const { keys, values, tname, mname, deck, qfmt, tags } = stmt.getAsObject();
-                const data = {} as any;
                 const vs = (values as string).split("\x1f");
+
+                const dataTrueCase = {} as any;
                 (keys as string).split("\x1f").forEach((k, i) => {
-                    data[k] = vs[i];
+                    dataTrueCase[k] = vs[i];
                 });
 
-                const entryName = `${mname}-${tname}-${vs[0]}`;
-
-                if (_n.indexOf(entryName) !== -1) {
-                    continue;
-                }
-
-                _n.push(entryName);
-
-                notes.push({
-                    entry: entryName,
-                    data
+                const dataLowerCase = {} as any;
+                (keys as string).toLocaleLowerCase().split("\x1f").forEach((k, i) => {
+                    dataTrueCase[k] = vs[i];
                 });
 
-                let front = mustache.render(qfmt as string, data);
+                let front = mustache.render(qfmt as string, dataTrueCase);
                 if (front === mustache.render(qfmt as string, {})) {
-                    console.log(front);
                     continue;
                 }
 
-                front = `@md5\n${md5hasher(convertLink(front))}`;
+                front = `@md5\n${md5hasher(this.convertLink(front))}`;
 
                 if (_e.indexOf(front) !== -1) {
                     continue;
@@ -181,36 +215,50 @@ export default class Anki {
 
                 entries.push({
                     deck: (deck as string).replace(/::/g, "/"),
-                    template: `${`${mname}-${tname}`}/${entryName}`,
+                    model: mname as string,
+                    template: tname as string,
+                    entry: vs[0],
+                    data: dataLowerCase,
                     front,
-                    tag: (tags as string).split(" ")
+                    tag: (tags as string).split(" "),
+                    sourceId
                 });
             }
         })();
 
-        db.insertMany(entries);
-        db.note.insert(notes);
+        (() => {
+            const batch = 1000;
+            const total = entries.length;
+            let subList = entries.splice(0, batch);
+            let from = 0;
 
-        const p = path.parse(db.loki.filename);
-        try {
-            fs.mkdirSync(path.join(p.dir, p.name));
-        } catch (e) {}
+            while (subList.length > 0) {
+                this.callback({
+                    status: "Uploading notes",
+                    progress: {
+                        from,
+                        total
+                    }
+                });
 
-        Object.keys(this.media).forEach((k) => {
-            fs.renameSync(path.join(this.dir.name, k), path.join(p.dir, p.name, this.media[k]));
-        });
+                dst.insertMany(subList);
+                subList = entries.splice(0, batch);
+                from += batch;
+            }
+        })();
     }
 
     public close() {
         this.db.close();
-        this.dir.removeCallback();
+    }
+
+    private convertLink(s: string) {
+        return s.replace(/(?:(?:href|src)=")([^"]+)(?:")/, (m, p1) => {
+            return `/media/${this.mediaNameToId[p1]}`;
+        });
     }
 }
 
-export function convertLink(s: string) {
-    return s.replace(/(?:(?:href|src)=")([^"]+)(?:")/, "/img/$1");
-}
-
-export function md5hasher(s: string) {
+export function md5hasher(s: string | Buffer) {
     return crypto.createHash("md5").update(s).digest("hex");
 }

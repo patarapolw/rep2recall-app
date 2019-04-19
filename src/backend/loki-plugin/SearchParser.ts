@@ -2,23 +2,17 @@ import P from "parsimmon";
 import XRegExp from "xregexp";
 import moment from "moment";
 
-export interface ILokiSearchParserRule {
+export interface ISearchParserRule {
     anyOf?: string[];
     isString?: string[];
     isDate?: string[];
     isList?: string[];
 }
 
-export class LokiSearchParser {
-    public static due(k: string, due: any[], cond?: any) {
-        cond = cond || {};
-        cond[k] = {$lte: moment().add(moment.duration(due[0], due[1])).toISOString()};
-        return cond;
-    }
-
+export class SearchParser {
     private lang: P.Language;
 
-    constructor(rule: ILokiSearchParserRule = {}) {
+    constructor(rule: ISearchParserRule = {}) {
         this.lang = P.createLanguage({
             Input: (r) => P.alt(
                 r.OrSentence,
@@ -107,7 +101,7 @@ export class LokiSearchParser {
                     if (v === "due") {
                         k = "nextReview";
                         op = "<=";
-                        v = "now";
+                        v = moment().toISOString();
                     } else if (v === "leech") {
                         k = "srsLevel";
                         v = 0;
@@ -128,7 +122,8 @@ export class LokiSearchParser {
                     const m = /^([-+]?\d+)(\S+)$/.exec(v.toString());
 
                     if (m) {
-                        return LokiSearchParser.due(k, [parseInt(m[1]), m[2]]);
+                        v = {$lte: moment().add(moment.duration(parseInt(m[1]), m[2] as any)).toISOString()};
+                        op = "<=";
                     } else if (v === "now") {
                         v = moment().toISOString();
                         op = "<=";
@@ -163,10 +158,12 @@ export class LokiSearchParser {
                     case "=":
                     default:
                 }
+                // result[k] = v;
 
-                result[k] = v;
-
-                return result;
+                return {$or: [
+                    {k: v},
+                    {[`data.${k}`]: v}
+                ]};
             }),
             Value: (r) => P.alt(
                 r.Number,
@@ -203,4 +200,4 @@ export class LokiSearchParser {
     }
 }
 
-export default LokiSearchParser;
+export default SearchParser;

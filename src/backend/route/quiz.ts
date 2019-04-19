@@ -20,14 +20,14 @@ class QuizController {
 
         if (req.body.due) {
             const d: any[] = req.body.due;
-            cards = q.where((c) => c.nextReview < moment().add(d[0], d[1]).toISOString()).data();
+            cards = q.where((c) => !!c.nextReview && c.nextReview.toString() < moment().add(d[0], d[1]).toISOString()).data();
         } else {
             cards = q.where((c) => {
                 return !c.nextReview || c.nextReview < moment().toISOString();
             }).data();
         }
 
-        return res.json(cards.map((c) => c.id));
+        return res.json(cards.map((c) => c.$loki));
     }
 
     public static render(req: Request, res: Response): Response {
@@ -37,9 +37,8 @@ class QuizController {
         const card = db.card.findOne({$loki: id});
 
         if (/@md5\n/.test(card.front)) {
-            const [t0, n0] = card.template!.split("/");
-            const t = db.template.findOne({name: t0});
-            const n = db.note.findOne({entry: n0});
+            const t = db.template.findOne({$loki: card.templateId});
+            const n = db.note.findOne({$loki: card.noteId});
             card.front = mustache.render(t.front, n.data);
             card.back = mustache.render(t.back || "", n.data);
         }

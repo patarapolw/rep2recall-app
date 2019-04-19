@@ -1,8 +1,11 @@
 import Loki, { Collection } from "@lokidb/loki";
 import { FSStorage } from "@lokidb/fs-storage";
 import fs from "fs";
+import moment from "moment";
 
 FSStorage.register();
+
+declare function interfaceKeys<T extends object>(): Array<keyof T>;
 
 export interface IDeck {
     $loki?: number;
@@ -12,20 +15,31 @@ export interface IDeck {
 }
 
 export interface ICard {
-    guid: string;
+    $loki?: number;
+    guid?: string;
     deckId: number;
-    template?: string;
+    templateId?: number;
+    noteId?: number;
     front: string;
     back?: string;
-    note?: string;
+    mnemonic?: string;
     srsLevel?: number;
     nextReview?: Date;
     tag?: string[];
 }
 
+export interface ISource {
+    $loki?: number;
+    created: Date;
+    name: string;
+    h: string;
+}
+
 export interface ITemplate {
     guid?: string;
+    sourceId?: number;
     name: string;
+    model?: string;
     front: string;
     back?: string;
     css?: string;
@@ -34,18 +48,35 @@ export interface ITemplate {
 export interface INote {
     $loki?: number;
     guid?: string;
-    entry: string;
-    data: any;
+    sourceId?: number;
+    name: string;
+    data: Map<string, string>;
+}
+
+export interface IMedia {
+    $loki?: number;
+    sourceId?: number;
+    name: string;
+    data: Buffer;
+    h: string;
 }
 
 export interface IEntry {
-    deck: string;
+    $loki?: number;
     template?: string;
+    model?: string;
+    entry?: string;
+    tFront?: string;
+    tBack?: string;
+    deck: string;
     front: string;
     back?: string;
+    mnemonic?: string;
     srsLevel?: number;
-    nextReview?: string;
-    tag: string[];
+    nextReview?: string | Date;
+    tag?: string[];
+    data?: Map<string, string>;
+    sourceId?: number;
 }
 
 export class Db {
@@ -63,8 +94,10 @@ export class Db {
     public loki: Loki;
     public deck: Collection<IDeck>;
     public card: Collection<ICard>;
+    public source: Collection<ISource>;
     public template: Collection<ITemplate>;
     public note: Collection<INote>;
+    public media: Collection<IMedia>;
 
     private constructor(loki: Loki) {
         this.loki = loki;
@@ -83,27 +116,25 @@ export class Db {
             });
         }
 
-        this.template = this.loki.getCollection("template");
-        if (this.template === null) {
-            this.template = this.loki.addCollection("template", {
-                unique: ["name"]
-            });
+        this.source = this.loki.getCollection("source");
+        if (this.source === null) {
+            this.source = this.loki.addCollection("source");
         }
 
-        const compositeUnique = (o: ITemplate) => {
-            const {name, front} = o;
-            if (this.template.findOne({name, front})) {
-                throw new Error(`Duplicate unique key [name, front]: ${JSON.stringify({name, front})}` );
-            }
-        };
-
-        this.template.on("pre-insert", compositeUnique);
-        this.template.on("pre-update", compositeUnique);
+        this.template = this.loki.getCollection("template");
+        if (this.template === null) {
+            this.template = this.loki.addCollection("template");
+        }
 
         this.note = this.loki.getCollection("note");
         if (this.note === null) {
-            this.note = this.loki.addCollection("note", {
-                unique: ["entry"]
+            this.note = this.loki.addCollection("note");
+        }
+
+        this.media = this.loki.getCollection("media");
+        if (this.media === null) {
+            this.media = this.loki.addCollection("media", {
+                unique: ["h"]
             });
         }
     }
@@ -113,11 +144,38 @@ export class Db {
         decks = decks.filter((d, i) => decks.indexOf(d) === i);
         const deckIds = decks.map((d) => this.getOrCreateDeck(d));
 
-        const cards: ICard[] = entries.map((e) => {
-            const {deck, ...x} = e;
+        let sourceId: number;
+        let templates = entries.filter((e) => e.model && e.template).map((e) => {
+            sourceId = e.sourceId!;
+            return `${e.template}\x1f${e.model}`;
+        });
+        templates = templates.filter((t, i) => templates.indexOf(t) === i);
+        const templateIds = templates.map((t) => {
+            const [name, model] = t.split("\x1f");
+            return this.template.findOne({sourceId, name, model}).$loki;
+        });
+
+        const noteIds = entries.map((e) => {
+            const {entry, data} = e;
+            if (entry) {
+                return this.note.insertOne({
+                    sourceId: sourceId!,
+                    name: entry!,
+                    data: data!
+                }).$loki;
+            } else {
+                return undefined;
+            }
+        });
+
+        const cards: ICard[] = entries.map((e, i) => {
+            const {deck, nextReview, front, back, mnemonic, srsLevel, tag} = e;
             return {
-                ...x,
-                deckId: deckIds[decks.indexOf(deck)]
+                front, back, mnemonic, srsLevel, tag,
+                nextReview: nextReview ? moment(nextReview).toDate() : undefined,
+                deckId: deckIds[decks.indexOf(deck)],
+                noteId: noteIds[i],
+                templateId: e.template && e.model ? templateIds[templates.indexOf(`${e.template}\x1f${e.model}`)] : undefined
             } as ICard;
         });
 
@@ -130,16 +188,30 @@ export class Db {
         return res.map((c) => c.$loki);
     }
 
-    public update(id: number, u: Partial<IEntry>) {
-        const {deck, ...x} = u;
+    public update(u: Partial<IEntry>) {
+        const c = this.transformUpdate(u);
+        return this.card.updateWhere((c0) => c0.$loki === c.$loki, (c0) => {
+            return Object.assign(c0, u);
+        });
+    }
 
-        if (deck) {
-            (x as any).deckId = this.getOrCreateDeck(deck);
+    private transformUpdate(u: Partial<IEntry>): Partial<ICard> {
+        const output: Partial<ICard> = {};
+
+        for (const k of Object.keys(u)) {
+            const v = (u as any)[k];
+
+            if (k === "deck") {
+                output.deckId = this.getOrCreateDeck(v);
+                delete (u as any)[k];
+            } else if (k === "nextReview") {
+                output.nextReview = moment(v).toDate();
+            } else if (interfaceKeys<ICard>().indexOf(k as any) !== -1) {
+                (output as any)[k] = v;
+            }
         }
 
-        this.card.updateWhere((c) => c.$loki === id, (c) => {
-            return Object.assign(c, x);
-        });
+        return output;
     }
 
     private getOrCreateDeck(name: string): number {

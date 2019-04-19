@@ -16,7 +16,7 @@ module.exports = {
     plugins: [
         {
             apply: (compiler) => {
-                compiler.hooks.compile.tap("open-browser", () => {
+                compiler.hooks.emit.tap("open-browser", () => {
                     if (isFirstEmit) {
                         waitOn({ resources: [`http://localhost:${process.env.PORT}`] }).then(() => {
                             open(`http://localhost:${process.env.PORT}`)

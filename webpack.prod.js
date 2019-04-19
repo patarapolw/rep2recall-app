@@ -9,7 +9,7 @@ module.exports = [
             electron: "./src/backend/electron.ts"
         },
         output: {
-            path: path.join(__dirname, "./dist/backend"),
+            path: path.join(__dirname, "./dist"),
             filename: "[name].min.js"
         },
         target: "electron-main",

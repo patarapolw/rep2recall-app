@@ -3,7 +3,20 @@ import SearchResource from "../db/SearchResource";
 import { Request, Response, Router } from "express";
 import XRegExp from "xregexp";
 import moment from "moment";
-import { ITreeViewItem } from "../../web/Quiz/tree/TreeViewItem";
+
+interface ITreeViewStat {
+    new: number;
+    leech: number;
+    due: number;
+}
+
+export interface ITreeViewItem {
+    name: string;
+    fullName: string;
+    isOpen: boolean;
+    children?: ITreeViewItem[];
+    stat: ITreeViewStat;
+}
 
 class DeckController {
     public static treeview(req: Request, res: Response): Response {

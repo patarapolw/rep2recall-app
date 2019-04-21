@@ -5,32 +5,32 @@ import path from "path";
 import Db, { ITemplate, IEntry, IMedia } from ".";
 import mustache from "mustache";
 import crypto from "crypto";
-import { UploadedFile } from "express-fileupload";
-import tmp from "tmp";
 
 export default class Anki {
     private db: sql.Database;
     private mediaNameToId: any = {};
-    private upload: UploadedFile;
+    private filename: string;
     private dir: string;
     private callback: (res: any) => any;
 
-    constructor(upload: UploadedFile, callback: (res: any) => any) {
-        this.upload = upload;
-        this.dir = tmp.dirSync().name;
+    constructor(filename: string, callback: (res: any) => any) {
+        this.filename = filename;
+        this.dir = path.dirname(this.filename);
         this.callback = callback;
 
-        const zip = new AdmZip(upload.data);
+        const zip = new AdmZip(this.filename);
         const zipCount = zip.getEntries().length;
 
         this.callback({
-            status: `Unzipping Apkg. File count: ${zipCount}`
+            text: `Unzipping Apkg. File count: ${zipCount}`,
+            max: 0
         });
 
         zip.extractAllTo(this.dir);
 
         this.callback({
-            status: "Preparing Anki resources."
+            text: "Preparing Anki resources.",
+            max: 0
         });
 
         this.db = new sql.Database(fs.readFileSync(path.join(this.dir, "collection.anki2")));
@@ -84,12 +84,13 @@ export default class Anki {
 
     public export(dst: Db) {
         this.callback({
-            status: "Writing to database"
+            text: "Writing to database",
+            max: 0
         });
 
         const sourceId = dst.source.insertOne({
-            name: this.upload.name,
-            h: md5hasher(this.upload.data),
+            name: this.filename,
+            h: md5hasher(fs.readFileSync(this.filename)),
             created: new Date()
         }).$loki;
 
@@ -109,11 +110,9 @@ export default class Anki {
 
             const total = Object.keys(mediaJson).length;
             this.callback({
-                status: "Uploading media",
-                progress: {
-                    from: i,
-                    total
-                }
+                text: "Uploading media",
+                current: i,
+                max: total
             });
 
             let mediaId;
@@ -155,11 +154,9 @@ export default class Anki {
 
             while (subList.length > 0) {
                 this.callback({
-                    status: "Uploading templates",
-                    progress: {
-                        from,
-                        total
-                    }
+                    text: "Uploading templates",
+                    current: from,
+                    max: total
                 });
 
                 dst.template.insert(subList);
@@ -234,11 +231,9 @@ export default class Anki {
 
             while (subList.length > 0) {
                 this.callback({
-                    status: "Uploading notes",
-                    progress: {
-                        from,
-                        total
-                    }
+                    text: "Uploading notes",
+                    current: from,
+                    max: total
                 });
 
                 dst.insertMany(subList);

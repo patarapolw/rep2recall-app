@@ -16,6 +16,7 @@
     "adm-zip": "^0.4.13",
     "appdirs": "^1.1.0",
     "body-parser": "^1.18.3",
+    "can-ndjson-stream": "^1.0.0",
     "cors": "^2.8.5",
     "dotenv": "^7.0.0",
     "ejs": "^2.6.1",

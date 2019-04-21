@@ -1,5 +1,7 @@
 import { Vue, Component } from "vue-property-decorator";
 import m from "hyperscript";
+// @ts-ignore
+import ndjson from "can-ndjson-stream";
 
 @Component({
     template: m(".container.mt-3", [
@@ -42,15 +44,15 @@ import m from "hyperscript";
                         ":style": "{display: progress.max ? 'block': 'none'}"
                     }
                 }, [
-                        m(".progress-bar.progress-bar-striped.progress-bar-animated", {
+                        m(".progress-bar.progress-bar-striped", {
                             attrs: {
                                 "role": "progressbar",
-                                ":aria-valuenow": "progress.value",
+                                ":aria-valuenow": "progress.current",
                                 "aria-valuemin": "0",
                                 ":aria-valuemax": "progress.max",
-                                ":style": "{width: progress.percent + '%'}"
+                                ":style": "{width: progress.getPercent(), transition: 'none'}"
                             }
-                        }, "{{progress.max === 1 ? (progress.percent).toFixed(2) + '%' : `${progress.value} of ${progress.max}`}}")
+                        }, "{{progress.max === 1 ? progress.getPercent() : `${progress.value} of ${progress.max}`}}")
                     ])
             ])
     ]).outerHTML
@@ -59,9 +61,11 @@ export default class ImportExport extends Vue {
     private importFile: File | null = null;
     private progress = {
         text: "",
-        value: 0,
+        current: 0,
         max: 0,
-        percent: 0
+        getPercent() {
+            return (this.max ? this.current / this.max * 100 : 100).toFixed(0) + "%";
+        }
     };
 
     private preventHide(e: any) {
@@ -77,25 +81,58 @@ export default class ImportExport extends Vue {
     private onImportButtonClicked() {
         const formData = new FormData();
         formData.append("apkg", this.importFile!);
-
         (this.$refs.uploadModal as any).show();
 
         const xhr = new XMLHttpRequest();
         xhr.upload.onprogress = (evt) => {
-            this.progress.text = `Uploading ${this.importFile!.name}`;
-            this.progress.value = evt.loaded / evt.total;
-            this.progress.max = 1;
-        };
-        xhr.onreadystatechange = (evt) => {
-            console.log(evt);
-            this.progress.text = xhr.responseText;
+            Object.assign(this.progress, {
+                text: `Uploading ${this.importFile!.name}`,
+                current: evt.loaded / evt.total,
+                max: 1
+            });
         };
         xhr.onload = () => {
-            (this.$refs.uploadModal as any).hide();
+            Object.assign(this.progress, {
+                text: `Parsing ${this.importFile!.name}`,
+                max: 0
+            });
+            const { fileId } = JSON.parse(xhr.responseText);
+
+            fetch("/io/import/anki/progress", {
+                method: "POST",
+                body: JSON.stringify({
+                    fileId,
+                    filename: this.importFile!.name
+                }),
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            }).then((r) => {
+                console.log(r);
+
+                const reader = r.body!.getReader();
+                const textDecoder = new TextDecoder();
+                let finished = false;
+
+                (async () => {
+                    while (!finished) {
+                        const {value, done} = await reader.read();
+                        if (done) {
+                            finished = true;
+                            (this.$refs.uploadModal as any).hide();
+                        }
+
+                        const p = textDecoder.decode(value).trimRight();
+
+                        console.log(p);
+                        if (p) {
+                            Object.assign(this.progress, JSON.parse(p));
+                        }
+                    }
+                })();
+            });
         };
-        xhr.onerror = () => {
-            (this.$refs.uploadModal as any).hide();
-        };
+
         xhr.open("POST", "/io/import/anki");
         xhr.send(formData);
     }

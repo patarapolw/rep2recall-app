@@ -1,7 +1,7 @@
 import { CreateElement } from "vue";
 import h from "hyperscript";
 import { fetchJSON, shuffle, md2html } from "../util";
-import { Vue, Component } from "vue-property-decorator";
+import { Vue, Component, Watch } from "vue-property-decorator";
 import quizState from "./shared";
 import globalState from "../shared";
 import EntryEditor from "../DbEditor/entry/EntryEditor";
@@ -11,9 +11,7 @@ export default class QuizArea extends Vue {
     private state = quizState;
 
     private currentId?: number;
-    private isQuizStarted = false;
     private isLoading = false;
-    private previousDeck?: string;
 
     public render(m: CreateElement) {
         return m("div", {
@@ -48,102 +46,95 @@ export default class QuizArea extends Vue {
         ]);
     }
 
-    public updated() {
-        if (this.state.currentDeck !== this.previousDeck) {
-            this.isQuizStarted = true;
+    @Watch("state.isQuizStarted")
+    public async initQuiz() {
+        if (this.state.isQuizStarted) {
             this.isLoading = true;
-            this.initQuiz();
-        }
-    }
 
-    private async initQuiz() {
-        this.previousDeck = this.state.currentDeck;
+            const quizAreaEl = this.$el;
+            const $quizArea = $(".quiz-area", quizAreaEl);
 
-        const quizAreaEl = this.$el;
-        const $quizArea = $(".quiz-area", quizAreaEl);
+            const cardIds = await fetchJSON(globalState.quizApi, {deck: this.state.currentDeck, q: this.state.q});
+            $quizArea.html("");
 
-        console.log(this.state);
+            this.state.isQuizStarted = false;
+            this.isLoading = false;
 
-        const cardIds = await fetchJSON(globalState.quizApi, {deck: this.state.currentDeck, q: this.state.q});
-        $quizArea.html("");
+            $quizArea.html(h("div", `${cardIds.length.toLocaleString()} entries to go...`).outerHTML);
+            if (cardIds.length > 0) {
+                shuffle(cardIds);
 
-        this.isQuizStarted = false;
-        this.isLoading = false;
+                while (cardIds.length > 0) {
+                    const cardId = cardIds.splice(0, 1)[0];
+                    const c = await fetchJSON(globalState.quizApi + "render", {id: cardId});
 
-        $quizArea.html(h("div", `${cardIds.length.toLocaleString()} entries to go...`).outerHTML);
-        if (cardIds.length > 0) {
-            shuffle(cardIds);
+                    const $parent = $(h(`.c-container.c-${cardId}`, [
+                        h(".c-all.c-data-front", {innerHTML: md2html(c.front)}),
+                        h(".c-back.c-data-back", {innerHTML: md2html(c.back)}),
+                        h(".c-btn-list.mt-3.mb-3", [
+                            h("button.btn.btn-primary.c-front.c-btn-show", "Show"),
+                            h("button.btn.btn-success.c-back.c-btn-right.mr-1", "Right"),
+                            h("button.btn.btn-danger.c-back.c-btn-wrong.mr-1", "Wrong"),
+                            h("button.btn.btn-info.c-back.c-btn-edit.mr-1", "Edit entry"),
+                            h("button.btn.btn-warning.c-back.c-btn-skip", "Skip")
+                        ])
+                    ]).outerHTML);
 
-            while (cardIds.length > 0) {
-                const cardId = cardIds.splice(0, 1)[0];
-                const c = await fetchJSON(globalState.quizApi + "render", {id: cardId});
-
-                const $parent = $(h(`.c-container.c-${cardId}`, [
-                    h(".c-all.c-data-front", {innerHTML: md2html(c.front)}),
-                    h(".c-back.c-data-back", {innerHTML: md2html(c.back)}),
-                    h(".c-btn-list.mt-3.mb-3", [
-                        h("button.btn.btn-primary.c-front.c-btn-show", "Show"),
-                        h("button.btn.btn-success.c-back.c-btn-right.mr-1", "Right"),
-                        h("button.btn.btn-danger.c-back.c-btn-wrong.mr-1", "Wrong"),
-                        h("button.btn.btn-info.c-back.c-btn-edit.mr-1", "Edit entry"),
-                        h("button.btn.btn-warning.c-back.c-btn-skip", "Skip")
-                    ])
-                ]).outerHTML);
-
-                $parent.data("id", cardId);
-                $quizArea.append($parent);
-                quizAreaEl.scrollTo(0, quizAreaEl.scrollHeight);
-
-                $(".c-back", $parent).hide();
-                $(".c-btn-show", $parent).click(() => {
-                    $(".c-front", $parent).hide();
-                    $(".c-back", $parent).show();
+                    $parent.data("id", cardId);
+                    $quizArea.append($parent);
                     quizAreaEl.scrollTo(0, quizAreaEl.scrollHeight);
-                });
 
-                $(".c-btn-edit", $parent).click(() => {
-                    this.currentId = cardId;
-                    (this.$refs.entryEditor as any).show(cardId);
-                });
-
-                await new Promise((resolve, reject) => {
-                    $(".c-btn-right", $parent).click(() => {
-                        fetchJSON("/quiz/right", {id: cardId}, "PUT");
-                        resolve();
+                    $(".c-back", $parent).hide();
+                    $(".c-btn-show", $parent).click(() => {
+                        $(".c-front", $parent).hide();
+                        $(".c-back", $parent).show();
+                        quizAreaEl.scrollTo(0, quizAreaEl.scrollHeight);
                     });
 
-                    $(".c-btn-wrong", $parent).click(() => {
-                        fetchJSON("/quiz/wrong", {id: cardId}, "PUT");
-                        resolve();
+                    $(".c-btn-edit", $parent).click(() => {
+                        this.currentId = cardId;
+                        (this.$refs.entryEditor as any).show(cardId);
                     });
 
-                    $(".c-btn-skip", $parent).click(() => {
-                        resolve();
-                    });
-                });
+                    await new Promise((resolve, reject) => {
+                        $(".c-btn-right", $parent).click(() => {
+                            fetchJSON("/quiz/right", {id: cardId}, "PUT");
+                            resolve();
+                        });
 
-                $(".c-btn-list", $parent).hide();
+                        $(".c-btn-wrong", $parent).click(() => {
+                            fetchJSON("/quiz/wrong", {id: cardId}, "PUT");
+                            resolve();
+                        });
+
+                        $(".c-btn-skip", $parent).click(() => {
+                            resolve();
+                        });
+                    });
+
+                    $(".c-btn-list", $parent).hide();
+                }
+
+                $quizArea.append(h("div", "All done!").outerHTML);
+            } else {
+                const [nextHour, nextDay] = await Promise.all([
+                    fetchJSON("/quiz/", {
+                        deck: quizState.currentDeck,
+                        q: this.state.q,
+                        due: [1, "hour"]
+                    }),
+                    fetchJSON("/quiz/", {
+                        deck: quizState.currentDeck,
+                        q: this.state.q,
+                        due: [1, "day"]
+                    })
+                ]);
+
+                $quizArea.append(h("div", [
+                    h("div", `Pending next hour: ${nextHour.length.toLocaleString()}`),
+                    h("div", `Pending next day: ${nextDay.length.toLocaleString()}`)
+                ]));
             }
-
-            $quizArea.append(h("div", "All done!").outerHTML);
-        } else {
-            const [nextHour, nextDay] = await Promise.all([
-                fetchJSON("/quiz/", {
-                    deck: quizState.currentDeck,
-                    q: this.state.q,
-                    due: [1, "hour"]
-                }),
-                fetchJSON("/quiz/", {
-                    deck: quizState.currentDeck,
-                    q: this.state.q,
-                    due: [1, "day"]
-                })
-            ]);
-
-            $quizArea.append(h("div", [
-                h("div", `Pending next hour: ${nextHour.length.toLocaleString()}`),
-                h("div", `Pending next day: ${nextDay.length.toLocaleString()}`)
-            ]));
         }
     }
 

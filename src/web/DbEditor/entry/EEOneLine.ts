@@ -7,6 +7,7 @@ import { toTitle } from "../../util";
 export default class EEOneLine extends Vue {
     @Prop() private col!: IColumn;
     @Prop() private value?: string | number | null;
+    @Prop() private readonly?: boolean;
 
     public render(m: CreateElement) {
         return m("div", {
@@ -20,6 +21,9 @@ export default class EEOneLine extends Vue {
             }, [
                 m("input", {
                     class: ["form-control"],
+                    attrs: {
+                        readonly: this.readonly
+                    },
                     domProps: {
                         value: this.value,
                         name: this.col.name,

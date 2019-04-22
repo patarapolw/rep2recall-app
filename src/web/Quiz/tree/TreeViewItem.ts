@@ -104,6 +104,7 @@ export default class TreeViewItem extends Vue {
             this.readMq();
         }, 400);
 
+        quizState.q = this.q;
         quizState.currentDeck = deckName;
     }
 

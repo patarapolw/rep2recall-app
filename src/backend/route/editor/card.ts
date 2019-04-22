@@ -2,6 +2,7 @@ import { Request, Response, Router } from "express";
 import SearchResource from "../../db/SearchResource";
 import Config from "../../config";
 import mustache from "mustache";
+import { IEntry } from "../../db";
 
 class EditorController {
     public static find(req: Request, res: Response): Response {
@@ -21,7 +22,7 @@ class EditorController {
             .map((c) => {
                 const data = c.data || {};
                 if (/@md5\n/.test(c.front)) {
-                    c.front = mustache.render(c.tFront, data);
+                    c.front = mustache.render(c.tFront || "", data);
                     c.back = c.back || mustache.render(c.tBack || "", data);
                 }
 
@@ -40,7 +41,7 @@ class EditorController {
         const c = q.limit(1).data()[0];
 
         if (/@md5\n/.test(c.front)) {
-            c.front = c.tFront;
+            c.front = c.tFront || "";
             c.back = c.back || c.tBack;
         }
 
@@ -63,12 +64,16 @@ class EditorController {
         const id: number = req.body.id;
 
         if (req.body.update) {
-            const u = req.body.update;
-            db.update(id, u);
+            const u: Partial<IEntry> = req.body.update;
+            u.$loki = id;
+            db.update(u);
         } else {
             const fieldName: string = req.body.fieldName;
             const fieldData: any = req.body.fieldData;
-            db.update(id, {[fieldName]: fieldData});
+            db.update({
+                $loki: id,
+                [fieldName]: fieldData
+            });
         }
 
         return res.sendStatus(201);

@@ -1,5 +1,6 @@
-import Db from ".";
-import LokiSearchParser from "./SearchParser";
+import Db, { ICard, IDeck, ITemplate, INote, IEntry } from ".";
+import SearchParser from "../loki-plugin/SearchParser";
+import { ResultSet } from "@lokidb/loki/types/loki/src/result_set";
 
 export class SearchResource {
     public static sorter(a: any, b: any, sortBy: string, desc: boolean) {
@@ -29,11 +30,11 @@ export class SearchResource {
     }
 
     private db: Db;
-    private parser: LokiSearchParser;
+    private parser: SearchParser;
 
     constructor(db: Db, anyOf: string[] = ["template", "front", "back", "note", "deck"]) {
         this.db = db;
-        this.parser = new LokiSearchParser({
+        this.parser = new SearchParser({
             anyOf,
             isString: ["template", "front", "back", "note", "deck", "name", "entry"],
             isDate: ["nextReview"],
@@ -45,29 +46,21 @@ export class SearchResource {
         return this.parser.parse(q);
     }
 
-    public getQuery(cond: any) {
-        return this.db.card.eqJoin(this.db.deck, "deckId", "$loki", (l, r) => {
-            const {front, back, note, tag, srsLevel, nextReview, template, vocab} = l;
+    public getQuery(cond: any): ResultSet<IEntry> {
+        return this.db.card.eqJoin(this.db.deck, "deckId", "$loki", (l: ICard, r: IDeck) => {
+            const {front, back, mnemonic, tag, srsLevel, nextReview, templateId, noteId} = l;
             const deck = r.name;
-            return {id: l.$loki, front, back, note, tag, srsLevel, nextReview, template, vocab, deck};
-        }).eqJoin(this.db.template, (l) => l.template ? l.template.split("/")[0] : null, "name", (l, r) => {
+            return {id: l.$loki, front, back, mnemonic, tag, srsLevel, nextReview, templateId, noteId, deck};
+        }).eqJoin(this.db.template, "templateId", "$loki", (l, r: ITemplate) => {
             delete l.$loki;
             delete l.meta;
-            return {...l, templateId: r.$loki, tFront: r.front, tBack: r.back};
-        }).eqJoin(this.db.note, (l) => l.template ? l.template.split("/")[1] : null, "entry", (l, r) => {
+            delete l.templateId;
+            return {...l, template: r.name, model: r.model, tFront: r.front, tBack: r.back};
+        }).eqJoin(this.db.note, "noteId", "$loki", (l, r: INote) => {
             delete l.$loki;
             delete l.meta;
-            delete r.dataId;
-
-            for (const k of Object.keys(r.data || {})) {
-                if (!l[k]) {
-                    l[k] = r.data[k];
-                } else {
-                    // l[k] = [l[k], r.data[k]];
-                }
-            }
-
-            return {...l, data: r.data};
+            delete l.noteId;
+            return {...l, entry: r.name, data: r.data};
         }).find(cond);
     }
 }

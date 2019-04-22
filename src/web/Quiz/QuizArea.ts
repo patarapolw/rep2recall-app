@@ -12,6 +12,8 @@ export default class QuizArea extends Vue {
 
     private currentId?: number;
     private isQuizStarted = false;
+    private isLoading = false;
+    private previousDeck?: string;
 
     public render(m: CreateElement) {
         return m("div", {
@@ -37,24 +39,36 @@ export default class QuizArea extends Vue {
             }),
             m("div", {
                 class: ["quiz-area"]
-            }, this.state.currentDeck)
+            }, [
+                m("img", {
+                    domProps: {src: "/asset/Spinner-1s-200px.svg"},
+                    style: {height: "5em", display: this.isLoading ? "block" : "none", margin: "0 auto"}
+                })
+            ])
         ]);
     }
 
     public updated() {
-        if (this.state.currentDeck && !this.isQuizStarted) {
+        if (this.state.currentDeck !== this.previousDeck) {
             this.isQuizStarted = true;
+            this.isLoading = true;
             this.initQuiz();
         }
     }
 
     private async initQuiz() {
+        this.previousDeck = this.state.currentDeck;
+
         const quizAreaEl = this.$el;
         const $quizArea = $(".quiz-area", quizAreaEl);
 
-        $quizArea.html("");
+        console.log(this.state);
+
         const cardIds = await fetchJSON(globalState.quizApi, {deck: this.state.currentDeck, q: this.state.q});
+        $quizArea.html("");
+
         this.isQuizStarted = false;
+        this.isLoading = false;
 
         $quizArea.html(h("div", `${cardIds.length.toLocaleString()} entries to go...`).outerHTML);
         if (cardIds.length > 0) {

@@ -54,11 +54,13 @@ export class SearchResource {
         }).eqJoin(this.db.template, "templateId", "$loki", (l, r: ITemplate) => {
             delete l.$loki;
             delete l.meta;
-            return {...l, tFront: r.front, tBack: r.back};
+            delete l.templateId;
+            return {...l, template: r.name, model: r.model, tFront: r.front, tBack: r.back};
         }).eqJoin(this.db.note, "noteId", "$loki", (l, r: INote) => {
             delete l.$loki;
             delete l.meta;
-            return {...l, data: r.data};
+            delete l.noteId;
+            return {...l, entry: r.name, data: r.data};
         }).find(cond);
     }
 }

@@ -113,6 +113,8 @@ export default class EntryEditor extends Vue {
         }
 
         if (this.entry.data) {
+            console.log(this.entry);
+
             formContent.push(m("h4", "Template data"));
 
             for (const k of ["model", "template", "entry"]) {
@@ -126,7 +128,7 @@ export default class EntryEditor extends Vue {
             for (const k of Object.keys(this.entry.data)) {
                 const col = {name: k};
                 formContent.push(m(EEMultiLine, {
-                    props: {col, value: this.entry[col.name] || "", readonly: true},
+                    props: {col, value: this.entry.data[col.name] || "", readonly: true},
                     on: {input: (_v: string) => Vue.set(this.entry.data, col.name, _v)}
                 }));
             }

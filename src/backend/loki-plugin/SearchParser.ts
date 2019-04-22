@@ -132,11 +132,9 @@ export class SearchParser {
 
                 switch (op) {
                     case ":":
-                        if (rule.isString) {
-                            if (rule.isString.indexOf(k) !== -1) {
-                                v = {$regex: XRegExp.escape(v.toString())};
-                            }
-                        } else {
+                        if (typeof v === "string") {
+                            v = {$regex: XRegExp.escape(v)};
+                        } else if (rule.isString && rule.isString.indexOf(v) !== -1) {
                             v = {$regex: XRegExp.escape(v.toString())};
                         }
                         break;
@@ -161,7 +159,7 @@ export class SearchParser {
                 // result[k] = v;
 
                 return {$or: [
-                    {k: v},
+                    {[k]: v},
                     {[`data.${k}`]: v}
                 ]};
             }),

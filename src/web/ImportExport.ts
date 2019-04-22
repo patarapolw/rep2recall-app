@@ -1,7 +1,6 @@
 import { Vue, Component } from "vue-property-decorator";
 import m from "hyperscript";
-// @ts-ignore
-import ndjson from "can-ndjson-stream";
+import dbEditorState from "./DbEditor/shared";
 
 @Component({
     template: m(".container.mt-3", [
@@ -52,7 +51,7 @@ import ndjson from "can-ndjson-stream";
                                 ":aria-valuemax": "progress.max",
                                 ":style": "{width: progress.getPercent(), transition: 'none'}"
                             }
-                        }, "{{progress.max === 1 ? progress.getPercent() : `${progress.value} of ${progress.max}`}}")
+                        }, "{{progress.max === 1 ? progress.getPercent() : `${progress.current} of ${progress.max}`}}")
                     ])
             ])
     ]).outerHTML
@@ -67,6 +66,12 @@ export default class ImportExport extends Vue {
             return (this.max ? this.current / this.max * 100 : 100).toFixed(0) + "%";
         }
     };
+
+    constructor(props: any) {
+        super(props);
+        dbEditorState.counter.isActive = false;
+        dbEditorState.searchBar.isActive = false;
+    }
 
     private preventHide(e: any) {
         if (this.progress.text) {
@@ -125,10 +130,13 @@ export default class ImportExport extends Vue {
                         const p = textDecoder.decode(value).trimRight();
 
                         console.log(p);
-                        if (p) {
+                        try {
                             Object.assign(this.progress, JSON.parse(p));
-                        }
+                        } catch (e) {}
                     }
+
+                    this.progress.text = "";
+                    (this.$refs.uploadModal as any).hide();
                 })();
             });
         };

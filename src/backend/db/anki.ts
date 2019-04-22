@@ -188,17 +188,12 @@ export default class Anki {
                 const { keys, values, tname, mname, deck, qfmt, tags } = stmt.getAsObject();
                 const vs = (values as string).split("\x1f");
 
-                const dataTrueCase = {} as any;
+                const data = {} as any;
                 (keys as string).split("\x1f").forEach((k, i) => {
-                    dataTrueCase[k] = vs[i];
+                    data[k] = vs[i];
                 });
 
-                const dataLowerCase = {} as any;
-                (keys as string).toLocaleLowerCase().split("\x1f").forEach((k, i) => {
-                    dataTrueCase[k] = vs[i];
-                });
-
-                let front = mustache.render(qfmt as string, dataTrueCase);
+                let front = mustache.render(qfmt as string, data);
                 if (front === mustache.render(qfmt as string, {})) {
                     continue;
                 }
@@ -215,7 +210,7 @@ export default class Anki {
                     model: mname as string,
                     template: tname as string,
                     entry: vs[0],
-                    data: dataLowerCase,
+                    data,
                     front,
                     tag: (tags as string).split(" "),
                     sourceId

@@ -8,7 +8,6 @@ import BootstrapVue from "bootstrap-vue";
 import "bootstrap";
 import CardEditor from "./DbEditor/CardEditor";
 import ImportExport from "./ImportExport";
-import m from "hyperscript";
 import "./contextmenu";
 
 Vue.use(VueRouter);
@@ -26,45 +25,77 @@ const router = new VueRouter({
 const app = new Vue({
     router,
     components: {Counter, SearchBar},
-    template: m("div.h-100", [
-        m("nav.navbar.navbar-expand-lg.navbar-light.bg-light", [
-            m("a.navbar-brand", {href: "#"}, "Rep2Recall"),
-            m("button.navbar-toggler", {
-                "data-target": "#navbarSupportedContent",
-                "type": "button"
+    render(m) {
+        return m("div", {class: ["h-100"]}, [
+            m("nav", {
+                class: ["navbar", "navbar-expand-lg", "navbar-light", "bg-light"]
             }, [
-                m("span.navbar-toggler-icon")
-            ]),
-            m("div.collapse.navbar-collapse#navbarSupportedContent", [
-                m("ul.navbar-nav.mr-auto", [
-                    m("li", {
-                        class: "['nav-item', $route.path === '/quiz' ? 'active' : '']"
-                    }, [
-                        m("router-link.nav-link", {attrs: {to: "/quiz"}}, "Quiz")
-                    ]),
-                    m("li", {
-                        class: "['nav-item', $route.path === '/editor' ? 'active' : '']"
-                    }, [
-                        m("router-link.nav-link", {attrs: {to: "/editor"}}, "Editor")
-                    ]),
-                    m("li", {
-                        class: "['nav-item', $route.path === '/importExport' ? 'active' : '']"
-                    }, [
-                        m("router-link.nav-link", {attrs: {to: "/importExport"}}, "Import")
-                    ]),
-                    m("li.nav-item", [
-                        m("a.nav-link", {
-                            href: "https://github.com/patarapolw/rep2recall",
-                            target: "_blank"
-                        }, "About")
-                    ]),
-                    m("counter")
+                m("a", {
+                    class: ["navbar-brand"],
+                    domProps: {href: "#"}
+                }, "Rep2Recall"),
+                m("button", {
+                    class: ["navbar-toggler"],
+                    attrs: {
+                        "data-target": "#navbarSupportedContent",
+                        "type": "button"
+                    }
+                }, [
+                    m("span", {class: "navbar-toggler-icon"})
                 ]),
-                m("ul.navbar-nav", [
-                    m("search-bar")
+                m("div", {
+                    class: ["collapse", "navbar-collapse"],
+                    attrs: {id: "navbarSupportedContent"}
+                }, [
+                    m("ul", {
+                        class: ["navbar-nav", "mr-auto"]
+                    }, [
+                        m("li", {
+                            class: ["nav-item", this.$route.path === "/quiz" ? "active" : ""]
+                        }, [
+                            m("router-link", {
+                                class: ["nav-link"],
+                                props: {to: "/quiz"}
+                            }, "Quiz")
+                        ]),
+                        m("li", {
+                            class: ["nav-item", this.$route.path === "/editor" ? "active" : ""]
+                        }, [
+                            m("router-link", {
+                                class: ["nav-link"],
+                                props: {to: "/editor"}
+                            }, "Editor")
+                        ]),
+                        m("li", {
+                            class: ["nav-item", this.$route.path === "/importExport" ? "active" : ""]
+                        }, [
+                            m("router-link", {
+                                class: ["nav-link"],
+                                props: {to: "/importExport"}
+                            }, "Import")
+                        ]),
+                        m("li", {
+                            class: ["nav-item"]
+                        }, [
+                            m("a", {
+                                class: ["nav-link"],
+                                domProps: {href: "https://github.com/patarapolw/rep2recall"},
+                                attrs: {target: "_blank"}
+                            }, "About")
+                        ]),
+                        m(Counter)
+                    ]),
+                    m("ul", {
+                        class: ["navbar-nav"]
+                    }, [
+                        m(SearchBar)
+                    ])
                 ])
-            ])
-        ]),
-        m("router-view")
-    ]).outerHTML
+            ]),
+            m("router-view")
+        ]);
+    },
+    data: {
+        displayName: null as any
+    }
 }).$mount("#App");

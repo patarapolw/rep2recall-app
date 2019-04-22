@@ -25,6 +25,7 @@ export default class DbEditor extends Vue {
     private limit = 10;
     private q = "";
     private entryEditorTitle = "Add new entry";
+    private isLoading = false;
 
     private counter = dbEditorState.counter;
     private searchBar = dbEditorState.searchBar;
@@ -91,11 +92,17 @@ export default class DbEditor extends Vue {
                         })
                     ])
                 ]),
-                m("tbody", this.data.map((d) => m(DbEditorTr, {
-                    ref: `row${d.id}`,
-                    props: {data: d, editorApi: this.editorApi, cols: this.cols, editor: this.editor},
-                    on: {remove: this.removeEntry, edit: this.editEntry}
-                })))
+                m("tbody", [
+                    m("img", {
+                        domProps: {src: "/asset/Spinner-1s-200px.svg"},
+                        style: {height: "5em", display: this.isLoading ? "block" : "none"}
+                    }),
+                    ...this.data.map((d) => m(DbEditorTr, {
+                        ref: `row${d.id}`,
+                        props: {data: d, editorApi: this.editorApi, cols: this.cols, editor: this.editor},
+                        on: {remove: this.removeEntry, edit: this.editEntry}
+                    }))
+                ])
             ])
         ]);
     }
@@ -145,10 +152,15 @@ export default class DbEditor extends Vue {
     }
 
     private async fetchData() {
+        this.isLoading = true;
+
         const r = await fetchJSON(this.editorApi, {q: this.q, offset: this.offset, limit: this.limit,
             sortBy: this.sortBy, desc: this.desc});
+
         this.data = r.data;
         this.counter.page.count = r.count;
+
+        this.isLoading = false;
     }
 
     private async updateCell({id, colName, value}: any) {

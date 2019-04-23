@@ -106,6 +106,7 @@ export default class TreeViewItem extends Vue {
 
         quizState.q = this.q;
         quizState.currentDeck = deckName;
+        quizState.isQuizStarted = true;
     }
 
     private readMq(mq: MediaQueryListEvent | MediaQueryList = quizState.mediaQuery) {

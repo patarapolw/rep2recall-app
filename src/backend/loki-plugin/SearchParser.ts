@@ -95,8 +95,6 @@ export class SearchParser {
 // tslint:disable-next-line: prefer-const
                 let [k, op, v] = el;
 
-                const result = {} as any;
-
                 if (k === "is") {
                     if (v === "due") {
                         k = "nextReview";
@@ -134,7 +132,7 @@ export class SearchParser {
                     case ":":
                         if (typeof v === "string") {
                             v = {$regex: XRegExp.escape(v)};
-                        } else if (rule.isString && rule.isString.indexOf(v) !== -1) {
+                        } else if (rule.isString && rule.isString.indexOf(k) !== -1) {
                             v = {$regex: XRegExp.escape(v.toString())};
                         }
                         break;

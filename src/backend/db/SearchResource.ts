@@ -48,9 +48,10 @@ export class SearchResource {
 
     public getQuery(cond: any): ResultSet<IEntry> {
         return this.db.card.eqJoin(this.db.deck, "deckId", "$loki", (l: ICard, r: IDeck) => {
-            const {front, back, mnemonic, tag, srsLevel, nextReview, templateId, noteId} = l;
+            const {front, back, mnemonic, tag, srsLevel, nextReview, templateId, noteId, created, modified} = l;
             const deck = r.name;
-            return {id: l.$loki, front, back, mnemonic, tag, srsLevel, nextReview, templateId, noteId, deck};
+            return {id: l.$loki, front, back, mnemonic, tag, srsLevel, nextReview, templateId, noteId, deck,
+            created, modified};
         }).eqJoin(this.db.template, "templateId", "$loki", (l, r: ITemplate) => {
             delete l.$loki;
             delete l.meta;

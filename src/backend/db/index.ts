@@ -26,6 +26,8 @@ export interface ICard {
     srsLevel?: number;
     nextReview?: Date;
     tag?: string[];
+    created?: Date;
+    modified?: Date;
 }
 
 export interface ISource {
@@ -168,6 +170,7 @@ export class Db {
             }
         });
 
+        const now = new Date();
         const cards: ICard[] = entries.map((e, i) => {
             const {deck, nextReview, front, back, mnemonic, srsLevel, tag} = e;
             return {
@@ -175,7 +178,8 @@ export class Db {
                 nextReview: nextReview ? moment(nextReview).toDate() : undefined,
                 deckId: deckIds[decks.indexOf(deck)],
                 noteId: noteIds[i],
-                templateId: e.template && e.model ? templateIds[templates.indexOf(`${e.template}\x1f${e.model}`)] : undefined
+                templateId: e.template && e.model ? templateIds[templates.indexOf(`${e.template}\x1f${e.model}`)] : undefined,
+                created: now
             } as ICard;
         });
 
@@ -190,6 +194,7 @@ export class Db {
 
     public update(u: Partial<IEntry>) {
         const c = this.transformUpdate(u);
+        c.modified = new Date();
         return this.card.updateWhere((c0) => c0.$loki === c.$loki, (c0) => {
             return Object.assign(c0, u);
         });

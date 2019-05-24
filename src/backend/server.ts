@@ -14,7 +14,9 @@ import ioRouter from "./route/io";
 const app = express();
 
 app.set("view engine", "ejs");
+// @ts-ignore
 app.engine("ejs", ejs.renderFile);
+// @ts-ignore
 app.engine("html", ejs.renderFile);
 app.set("views", path.join(__dirname, "../views"));
 

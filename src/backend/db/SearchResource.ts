@@ -32,7 +32,7 @@ export class SearchResource {
     private db: Db;
     private parser: SearchParser;
 
-    constructor(db: Db, anyOf: string[] = ["template", "front", "back", "note", "deck"]) {
+    constructor(db: Db, anyOf: string[] = ["template", "front", "back", "note", "deck", "tag"]) {
         this.db = db;
         this.parser = new SearchParser({
             anyOf,

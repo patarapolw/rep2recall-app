@@ -24,13 +24,7 @@ export async function fetchJSON(url: string, data: any = {}, method?: string): P
     try {
         return await res.json();
     } catch (e) {
-        if (res.status < 400) {
-            return res.status;
-        } else if (res.status === 403) {
-            return location.reload();
-        } else {
-            throw new Error(res.statusText);
-        }
+        return res.status;
     }
 }
 

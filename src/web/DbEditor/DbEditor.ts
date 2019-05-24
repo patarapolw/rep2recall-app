@@ -141,12 +141,6 @@ export default class DbEditor extends Vue {
         this.fetchData();
     }
 
-    public beforeUpdate() {
-        if (this.data.length === 0) {
-            this.fetchData();
-        }
-    }
-
     public updated() {
         resizableGrid($("table")[0]);
     }
@@ -154,11 +148,13 @@ export default class DbEditor extends Vue {
     private async fetchData() {
         this.isLoading = true;
 
-        const r = await fetchJSON(this.editorApi, {q: this.q, offset: this.offset, limit: this.limit,
-            sortBy: this.sortBy, desc: this.desc});
-
-        this.data = r.data;
-        this.counter.page.count = r.count;
+        try {
+            const r = await fetchJSON(this.editorApi, {q: this.q, offset: this.offset, limit: this.limit,
+                sortBy: this.sortBy, desc: this.desc});
+    
+            this.data = r.data;
+            this.counter.page.count = r.count;
+        } catch (e) {};
 
         this.isLoading = false;
     }

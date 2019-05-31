@@ -63,7 +63,7 @@ export class SearchParser {
 
                 if (rule.anyOf) {
                     for (const col of rule.anyOf) {
-                        let def = {[col]: {[col]: el}};
+                        let def = {[col]: el};
 
                         if ((!rule.isString && !rule.isList) || (rule.isString && rule.isString.indexOf(col) !== -1)) {
                             def = {[col]: {$regex: XRegExp.escape(el.toString())}};
@@ -120,7 +120,7 @@ export class SearchParser {
                     const m = /^([-+]?\d+)(\S+)$/.exec(v.toString());
 
                     if (m) {
-                        v = {$lte: moment().add(moment.duration(parseInt(m[1]), m[2] as any)).toISOString()};
+                        v = moment().add(moment.duration(parseInt(m[1]), m[2] as any)).toISOString();
                         op = "<=";
                     } else if (v === "now") {
                         v = moment().toISOString();

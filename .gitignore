@@ -39,3 +39,6 @@ typings/
 build/
 user/
 user.*
+.venv/
+__pycache__
+.idea

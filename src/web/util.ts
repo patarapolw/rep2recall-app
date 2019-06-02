@@ -39,3 +39,21 @@ const md = new showdown.Converter({
 export function md2html(s?: string) {
     return md.makeHtml(s || "");
 }
+
+export function makeCamelSpaced(s: string): string {
+    const tokens: string[] = [];
+    let previousStart = -1;
+
+    s.split("").forEach((c, i) => {
+        if (c === c.toLocaleUpperCase()) {
+            tokens.push(s.substr(previousStart + 1, i));
+            previousStart = i - 1;
+        }
+    });
+
+    if (previousStart < s.length - 2) {
+        tokens.push(s.substr(previousStart + 1));
+    }
+
+    return tokens.map((t) => t[0].toLocaleUpperCase() + t.substr(1)).join(" ");
+}

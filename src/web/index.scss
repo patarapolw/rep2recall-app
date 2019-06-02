@@ -14,23 +14,27 @@ $nav-button-size: 70px;
     height: 100%;
 }
 
+.overflow-scroll {
+    overflow: scroll;
+}
+
 .navbar {
     width: $nav-button-size;
     margin: 0;
     padding: 0;
-}
 
-.navbar > * {
-    padding: 10px;
-    width: $nav-button-size;
-    height: $nav-button-size;
-    border: 0;
-    background-color: rgba($color: #000000, $alpha: 0);
-
-    a {
-        font-size: 50px;
-        text-decoration: none;
-        color: darkblue;
+    > * {
+        padding: 10px;
+        width: $nav-button-size;
+        height: $nav-button-size;
+        border: 0;
+        background-color: rgba($color: #000000, $alpha: 0);
+    
+        a {
+            font-size: 50px;
+            text-decoration: none;
+            color: darkblue;
+        }
     }
 }
 
@@ -44,23 +48,61 @@ $nav-button-size: 70px;
     overflow: scroll;
 }
 
-.editor-control {
-    height: 3em;
-    width: 100%;
-    background-color: rgb(233, 233, 233);
-    align-items: center;
-    display: flex;
-    top: 0px;
-    position: fixed;
+.editor-window {
+    $control-height: 50px;
 
-    button, span {
-        padding: 1em;
+    .editor-control {
+        z-index: 200;
+        height: 3em;
+        width: 100%;
+        background-color: rgb(233, 233, 233);
+        align-items: center;
+        display: flex;
+        top: 0px;
+        height: $control-height;
+        position: fixed;
+    
+        button, span {
+            padding: 1em;
+        }
+    
+        .editor-input {
+            position: fixed;
+            right: 1em;
+            width: 300px;
+        }
     }
 
-    .editor-input {
-        position: fixed;
-        right: 1em;
-        width: 300px;
+    table {
+        $thead-height: 50px;
+
+        thead {
+            position: sticky;
+            position: -webkit-sticky;
+            top: $control-height;
+            height: $thead-height;
+            z-index: 100;
+            background-color: rgba($color: white, $alpha: 0.8);
+
+            th {
+                position: sticky;
+                position: -webkit-sticky;
+                top: $control-height;
+                height: $thead-height;
+                z-index: 100;
+                background-color: rgba($color: white, $alpha: 0.8);
+            }
+        }
+
+        .fixed-header-offset {
+            height: $control-height;
+        }
+    }
+
+    .wrapper {
+        overflow: scroll;
+        max-height: 300px;
+        max-width: 400px;
     }
 }
 
@@ -68,4 +110,71 @@ $nav-button-size: 70px;
     width: 3em;
     display: inline-block;
     text-align: right;
+}
+
+.table-div {
+    $table-offset: 50px;
+    $table-thead-height: 40px;
+
+    .table-thead-div {
+        overflow: scroll;
+        top: $table-offset;
+        height: $table-thead-height;
+        position: fixed;
+        width: 100%;
+        background: white;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+
+        &::-webkit-scrollbar {
+            width: 0px;  /* Remove scrollbar space */
+            background-color: transparent;  /* Optional: just make scrollbar invisible */
+            margin: 0;
+            padding: 0;
+        }
+
+        > div {
+            height: $table-thead-height;
+
+            > * {
+                display: inline-block;
+                height: $table-thead-height;
+                font-weight: bold !important;
+                border-bottom: 1px solid black;
+                bottom: 0;
+                overflow: visible;
+        
+                > * {
+                    display: grid;
+                    height: 100%;
+        
+                    > input {
+                        margin: auto;
+                    }
+                }
+        
+                > p {
+                    margin-top: 10px;
+                    margin-left: 10px;
+                }
+            }
+        }
+    }
+
+    table {
+        top: $table-offset + $table-thead-height;
+        position: absolute;
+        z-index: -100;
+    }
+}
+
+.datetime-nullable {
+    > input {
+        background-color: white !important;
+    }
+}
+
+iframe {
+    margin: 0;
+    padding: 0;
 }

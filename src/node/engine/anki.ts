@@ -226,6 +226,9 @@ export default class Anki {
                 }
                 frontSet.add(front);
 
+                let tag = (tags as string).split(" ");
+                tag = tag.filter((t, i) => t && tag.indexOf(t) === i);
+
                 entries.push({
                     deck: (deck as string).replace(/::/g, "/"),
                     model: mname as string,
@@ -233,7 +236,7 @@ export default class Anki {
                     entry: vs[0],
                     data,
                     front,
-                    tag: (tags as string).split(" "),
+                    tag,
                     sourceId
                 });
             }

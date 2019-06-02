@@ -9,12 +9,16 @@ export default (f: FastifyInstance, opt: any, next: any) => {
         const rSearch = new SearchParser();
         const cond = rSearch.parse(req.body.q);
     
-        const offset: number = req.body.offset;
+        let offset: number = req.body.offset;
         const limit: number = req.body.limit;
         const sortBy: string = req.body.sortBy || "deck";
         const desc: boolean = req.body.desc || false;
     
         const q = db.getAll().filter(mongoToFilter(cond));
+
+        if (offset < 0 || offset >= q.length) {
+            offset = q.length - limit;
+        }
     
         return {
             data: q.sort((a, b) => sorter(a, b, sortBy, desc)).slice(offset, offset + limit)
@@ -27,7 +31,8 @@ export default (f: FastifyInstance, opt: any, next: any) => {
     
                 return c;
             }),
-            count: q.length
+            count: q.length,
+            offset
         };
     });
     

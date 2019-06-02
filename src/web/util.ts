@@ -12,9 +12,9 @@ export function toTitle(s: string) {
     return s[0].toLocaleUpperCase() + s.slice(1);
 }
 
-export async function fetchJSON(url: string, data: any = {}, method?: string): Promise<any> {
+export async function fetchJSON(url: string, data: any = {}, method: string = "POST"): Promise<any> {
     const res = await fetch(url, {
-        method: method || "POST",
+        method,
         headers: {
             "Content-Type": "application/json; charset=utf-8"
         },
@@ -24,7 +24,11 @@ export async function fetchJSON(url: string, data: any = {}, method?: string): P
     try {
         return await res.json();
     } catch (e) {
-        return res.status;
+        if (res.status < 400) {
+            return res.status;
+        } else {
+            throw e;
+        }
     }
 }
 

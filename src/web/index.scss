@@ -1,95 +1,71 @@
 @import "~bootstrap/scss/bootstrap.scss";
 @import "~bootstrap-vue/src/index.scss";
 @import "~flatpickr/dist/flatpickr.min";
+@import "~@fortawesome/fontawesome-free/scss/fontawesome.scss";
+$fa-font-path: '~@fortawesome/fontawesome-free/webfonts';
+@import "~@fortawesome/fontawesome-free/scss/regular.scss";
+@import "~@fortawesome/fontawesome-free/scss/solid.scss";
+@import "~@fortawesome/fontawesome-free/scss/brands.scss";
 
-html, body, #App {
-    height: 100%;
-}
+$nav-button-size: 70px;
 
-.h-0 {
-    height: 0px !important;
-    margin: 0;
-    padding: 0;
-    outline: 0;
-}
-
-.page-control {
-    white-space: nowrap;
-}
-
-.quizarea img {
-    max-width: 700px;
-    max-height: 500px;
-}
-
-table img {
-    max-width: 400px;
-}
-
-img {
-    max-width: 100%;
-}
-
-textarea {
-    font-family: 'Courier New', Courier, monospace;
-    resize: none;
-}
-
-pre {
-    white-space: pre-wrap;
-}
-
-.animate {
-    transition: all 0.4s linear;
-}
-
-.navbar-nav > li {
-    display: inline-block;
-}
-
-.clear, .clear * {
-    background-color: rgba($color: #fff, $alpha: 0);
-    border: 0px;
-}
-
-.cell-wrapper {
-    max-height: 200px;
-    overflow: scroll;
-}
-
-.cell-editor-md {
-    height: 500px !important;
-}
-
-.cell-editor-text textarea {
+.stretched {
     width: 100%;
     height: 100%;
 }
 
-.modal-content * {
-    pointer-events: auto;
+.navbar {
+    width: $nav-button-size;
+    margin: 0;
+    padding: 0;
 }
 
-table {
-    table-layout: fixed;
+.navbar > * {
+    padding: 10px;
+    width: $nav-button-size;
+    height: $nav-button-size;
+    border: 0;
+    background-color: rgba($color: #000000, $alpha: 0);
+
+    a {
+        font-size: 50px;
+        text-decoration: none;
+        color: darkblue;
+    }
 }
 
-* {
-    word-break: break-word;
+.body {
+    position: fixed;
+    border: 1px solid lightgray;
+    height: 100%;
+    width: 100%;
+    left: $nav-button-size;
+    top: 0;
+    overflow: scroll;
 }
 
-.flatpickr-input {
-    background: #fff !important;
+.editor-control {
+    height: 3em;
+    width: 100%;
+    background-color: rgb(233, 233, 233);
+    align-items: center;
+    display: flex;
+    top: 0px;
+    position: fixed;
+
+    button, span {
+        padding: 1em;
+    }
+
+    .editor-input {
+        position: fixed;
+        right: 1em;
+        width: 300px;
+    }
 }
 
-.crop {
-    overflow: hidden;
-}
-
-input.form-control:read-only, textarea.form-control:read-only {
-    background-color: #fff;
-}
-
-.hidden {
-    display: none;
+.tree-score > * {
+    width: 3em;
+    display: inline-block;
+    text-align: right;
 }

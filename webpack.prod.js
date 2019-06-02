@@ -1,15 +1,16 @@
 const path = require("path");
 const { web } = require("./webpack.common");
+const CopyPlugin = require('copy-webpack-plugin');
 
 module.exports = [
     {
         mode: "production",
         entry: {
-            server: "./src/backend/server.ts",
-            electron: "./src/backend/electron.ts"
+            server: "./src/node/server.ts",
+            electron: "./src/node/electron.ts"
         },
         output: {
-            path: path.join(__dirname, "./dist"),
+            path: path.join(__dirname, "build"),
             filename: "[name].min.js"
         },
         target: "electron-main",
@@ -34,14 +35,16 @@ module.exports = [
     },
     {
         mode: "production",
-        entry: {
-            index: "./src/web/index.ts"
-        },
         target: "electron-renderer",
         node: {
             __dirname: false,
             __filename: false,
         },
-        ...web
+        ...web,
+        plugins: [
+            new CopyPlugin([
+                { from: 'public', to: 'dist' }
+            ]),
+        ],
     }
 ]

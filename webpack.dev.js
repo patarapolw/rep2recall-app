@@ -1,12 +1,16 @@
 const { web } = require("./webpack.common");
-const dotenv = require("dotenv");
-dotenv.config();
+const path = require("path");
 
 module.exports = {
     mode: "development",
     devtool: "inline-source-map",
-    entry: {
-        index: "./src/web/index.ts"
-    },
-    ...web
+    ...web,
+    devServer: {
+        open: true,
+        contentBase: path.resolve(__dirname, "public"),
+        watchContentBase: true,
+        proxy: {
+            "/api": "http://localhost:41547"
+        }
+    }
 };

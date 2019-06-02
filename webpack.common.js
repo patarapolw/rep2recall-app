@@ -2,6 +2,9 @@ const path = require("path");
 
 module.exports = {
     web: {
+        entry: {
+            index: "./src/web/index.ts"
+        },
         output: {
             path: path.resolve(__dirname, "dist/web"),
             filename: "[name].min.js"
@@ -39,7 +42,7 @@ module.exports = {
                     loader: "file-loader",
                     options: {
                         name: "[name].[ext]",
-                        outputPath: "../fonts/"
+                        // outputPath: "../fonts/"
                     }
                 }]
             },
@@ -49,7 +52,7 @@ module.exports = {
                     loader: 'file-loader',
                     options: {
                         name: '[name].[ext]',
-                        outputPath: "../images/"
+                        // outputPath: "../images/"
                     },
                 },],
             },

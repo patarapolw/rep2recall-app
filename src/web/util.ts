@@ -57,3 +57,13 @@ export function makeCamelSpaced(s: string): string {
 
     return tokens.map((t) => t[0].toLocaleUpperCase() + t.substr(1)).join(" ");
 }
+
+export function normalizeArray(item: any, forced: boolean = true) {
+    if (Array.isArray(item)) {
+        if (forced || item.length == 1) {
+            return item[0];
+        }
+    } 
+
+    return item;
+}

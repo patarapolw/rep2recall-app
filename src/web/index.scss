@@ -62,8 +62,17 @@ $nav-button-size: 70px;
         height: $control-height;
         position: fixed;
     
-        button, span {
+        > button, span {
             padding: 1em;
+        }
+
+        .editor-button {
+            width: 100px;
+            margin-right: 1em;
+
+            .dropdown-toggle-split {
+                width: 0 !important;
+            }
         }
     
         .editor-input {
@@ -177,4 +186,10 @@ $nav-button-size: 70px;
 iframe {
     margin: 0;
     padding: 0;
+}
+
+.small-spinner {
+    margin: 0 auto;
+    height: 100px;
+    width: 100px;
 }

@@ -8,14 +8,17 @@ import { fetchJSON } from "./util";
     template: h(".container.mt-3", [
         h(".input-group", [
             h("input.form-control", {
-                placeholder: "Type here to search"
+                placeholder: "Type here to search",
+                attrs: {
+                    "v-on:keyup": "onInputKeypress"
+                }
             }, "{{ q }}"),
             h(".input-group-append", [
                 h("button.btn.btn-outline-success", "Search")
             ])
         ]),
         h(".treeview", [
-            h("img", {
+            h("img.small-spinner", {
                 src: "Spinner-1s-200px.svg",
                 attrs: {
                     ":style": "{display: isLoading ? 'block' : 'none'}"
@@ -36,15 +39,22 @@ import { fetchJSON } from "./util";
 export default class QuizUi extends Vue {
     private isLoading = true;
     private data: ITreeViewItem[] = [];
-    private q = ""
+    private q = "";
 
     public mounted() {
         this.getTreeViewData();
     }
 
-    @Watch("q")
-    public watchQ() {
+    public update() {
         this.getTreeViewData();
+    }
+
+    private onInputKeypress(evt: any) {
+        if (evt.key === "Enter") {
+            this.getTreeViewData();
+        } else {
+            this.q = evt.target.value;
+        }
     }
 
     private async getTreeViewData() {

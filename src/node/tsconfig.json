@@ -1,7 +1,7 @@
 {
     "compilerOptions": {
         "outDir": "../../build",
-        "sourceMap": true,
+        "sourceMap": false,
         "strict": true,
         "noImplicitReturns": true,
         "noImplicitAny": true,

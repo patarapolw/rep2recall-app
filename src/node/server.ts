@@ -12,7 +12,11 @@ import mediaRouter from "./api/media";
 import quizRouter from "./api/quiz";
 import Db from "./engine/db";
 
-const f = fastify();
+const f = fastify({
+    logger: {
+        prettyPrint: true
+    }
+});
 
 f.register(cors);
 f.register(multipart);
@@ -32,12 +36,10 @@ process.on("SIGINT", onExit);
     Config.DB = await Db.connect(Config.COLLECTION);
 
     try {
-        await f.listen(Config.PORT, () => {
-            console.log(`Server running on port:${Config.PORT}`)
-        })
+        await f.listen(Config.PORT);
     } catch (err) {
-        f.log.error(err)
-        process.exit(1)
+        f.log.error(err);
+        process.exit(1);
     }
 })()
 

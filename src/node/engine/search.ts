@@ -69,14 +69,14 @@ export class SearchParser {
                         let def = {[col]: el};
 
                         if (!rule.isString || (rule.isString && rule.isString.indexOf(col) !== -1)) {
-                            def = {[col]: {$substr: el.toString()}};
+                            def = {[col]: {$regex: XRegExp.escape(el.toString())}};
                         }
 
                         expr.push(def);
                     }
                 } else if (rule.isString) {
                     for (const col of rule.isString) {
-                        expr.push({[col]: {$substr: el.toString()}});
+                        expr.push({[col]: {$regex: XRegExp.escape(el.toString())}});
                     }
                 }
 
@@ -132,9 +132,9 @@ export class SearchParser {
                 switch (op) {
                     case ":":
                         if (typeof v === "string") {
-                            v = {$substr: v};
+                            v = {$regex: XRegExp.escape(v)};
                         } else if (rule.isString && rule.isString.indexOf(k) !== -1) {
-                            v = {$substr: v.toString()};
+                            v = {$regex: XRegExp.escape(v.toString())};
                         }
                         break;
                     case "~":
@@ -157,10 +157,7 @@ export class SearchParser {
                 }
                 // result[k] = v;
 
-                return {$or: [
-                    {[k]: v},
-                    {[`data.${k}`]: v}
-                ]};
+                return {[k]: v};
             }),
             Value: (r) => P.alt(
                 r.Number,
@@ -238,16 +235,17 @@ export function mongoToFilter(cond: any): (item: any) => boolean {
                 }
             } else {
                 const ck: any = cond[k];
+                const v = item[k] || (item.data ? item.data[k] : undefined);
 
                 if (ck && typeof ck === "object" && Object.keys(ck).some((c) => c[0] === "$")) {
-                    return mongoCompare(item[k], ck);
+                    return mongoCompare(v, ck);
                 } else {
-                    if (Array.isArray(item[k])) {
-                        if (item[k].indexOf(ck) === -1) {
+                    if (Array.isArray(v)) {
+                        if (v.indexOf(ck) === -1) {
                             return false;
                         }
                     } else {
-                        if (item[k] !== ck) {
+                        if (v !== ck) {
                             return false;
                         }
                     }
@@ -260,41 +258,37 @@ export function mongoToFilter(cond: any): (item: any) => boolean {
 }
 
 function mongoCompare(v: any, ck: any): boolean {
-    for (const op of Object.keys(ck)) {
-        const v0 = ck[op];
-
-        if (op === "$regex") {
-            if (Array.isArray(v)) {
-                return v.some((b) => new RegExp(v0.toString()).test(b));
-            } else {
-                return new RegExp(v0.toString()).test(v);
+    try {
+        for (const op of Object.keys(ck)) {
+            const v0 = ck[op];
+    
+            if (op === "$regex") {
+                if (Array.isArray(v)) {
+                    return v.some((b) => new RegExp(v0.toString(), "i").test(b));
+                } else {
+                    return new RegExp(v0.toString(), "i").test(v);
+                }
+            } else if (op === "$startswith") {
+                if (Array.isArray(v)) {
+                    return v.some((b) => b.indexOf(v0.toString()) === 0);
+                } else {
+                    return v.indexOf(v0.toString()) === 0;
+                }
+            } else if (op === "$gte") {
+                return v >= v0;
+            } else if (op === "$gt") {
+                return v > v0;
+            } else if (op === "$lte") {
+                return v <= v0;
+            } else if (op === "$lt") {
+                return v < v0;
+            } else if (op === "$exists") {
+                return (v !== undefined) === v0;
+            } else if (op === "$in") {
+                return (v0 as any[]).some((a) => a === v);
             }
-        } else if (op === "$substr") {
-            if (Array.isArray(v)) {
-                return v.some((b) => b.indexOf(v0.toString()) !== -1);
-            } else {
-                return v.indexOf(v0.toString()) !== -1;
-            }
-        } else if (op === "$startswith") {
-            if (Array.isArray(v)) {
-                return v.some((b) => b.indexOf(v0.toString()) === 0);
-            } else {
-                return v.indexOf(v0.toString()) === 0;
-            }
-        } else if (op === "$gte") {
-            return v >= v0;
-        } else if (op === "$gt") {
-            return v > v0;
-        } else if (op === "$lte") {
-            return v <= v0;
-        } else if (op === "$lt") {
-            return v < v0;
-        } else if (op === "$exists") {
-            return (v !== undefined) === v0;
-        } else if (op === "$in") {
-            return (v0 as any[]).some((a) => a === v);
         }
-    }
+    } catch (e) {}
 
     return false;
 }

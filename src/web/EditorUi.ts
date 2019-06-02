@@ -1,4 +1,4 @@
-import { Vue, Component } from "vue-property-decorator";
+import { Vue, Component, Watch } from "vue-property-decorator";
 import h from "hyperscript";
 import { Columns } from "./shared";
 import { makeCamelSpaced, fetchJSON } from "./util";
@@ -14,21 +14,34 @@ import DatetimeNullable from "./editor/DatetimeNullable";
             h("button.btn", {attrs: {
                 "v-on:click": "offset -= limit"
             }}, "<"),
-            h("span", "{{getEditorLabel()}}"),
+            h("span", "{{editorLabel}}"),
             h("button.btn", {attrs: {
                 "v-on:click": "offset += limit"
             }}, ">"),
             h("button.btn", {attrs: {
                 "v-on:click": "offset = NaN"
             }}, ">>"),
+            h("div", {attrs: {
+                "v-if": "checkedIds.size > 0"
+            }}, [
+                h("button.btn.btn-outline-success.editor-button", {attrs: {
+                    "v-if": "checkedIds.size === 1"
+                }}, "Edit"),
+                h("button.btn.btn-outline-secondary.mr-3", "Change Deck"),
+                h("button.btn.btn-outline-danger.editor-button", "Delete"),
+            ]),
             h(".editor-input", [
                 h("input.form-control", {
-                    placeholder: "Type here to search"
+                    placeholder: "Type here to search",
+                    attrs: {
+                        ":value": "q",
+                        "v-on:keyup": "onSearchbarKeypress"
+                    }
                 })
             ])
         ]),
-        h("table.table", {attrs: {
-            ":style": "{width: getTableWidth() + 'px'}"
+        h("table.table.table-hover", {attrs: {
+            ":style": "{width: tableWidth + 'px'}"
         }}, [
             h("colgroup", [
                 h("col", {attrs: {
@@ -49,7 +62,11 @@ import DatetimeNullable from "./editor/DatetimeNullable";
                 h("tr", [
                     h("th", [
                         h("div", [
-                            h("input", {type: "checkbox"})
+                            h("input", {type: "checkbox", attrs: {
+                                "v-on:click": "onCheckboxClicked($event)",
+                                "ref": "checkbox.main",
+                                ":checked": "checkedIds.size > 0"
+                            }})
                         ])
                     ]),
                     h("th", {attrs: {
@@ -72,7 +89,10 @@ import DatetimeNullable from "./editor/DatetimeNullable";
                 }}, [
                     h("td", {style: {width: "50px"}}, [
                         h("div", [
-                            h("input", {type: "checkbox"})
+                            h("input", {type: "checkbox", attrs: {
+                                "v-on:click": "onCheckboxClicked($event, d.id)",
+                                ":checked": "checkedIds.has(d.id)"
+                            }})
                         ])
                     ]),
                     h("td", {attrs: {
@@ -87,12 +107,12 @@ import DatetimeNullable from "./editor/DatetimeNullable";
                             "frameBorder": "0"
                         }}),
                         h("datetime-nullable", {attrs: {
-                            "v-if": "a[2].type === 'datetime'",
+                            "v-else-if": "a[2].type === 'datetime'",
                             ":value": "a[1]",
                             "width": "220"
                         }}),
                         h(".wrapper", {attrs: {
-                            "v-if": "a[2].type !== 'html' && a[2].type !== 'datetime'",
+                            "v-else": "",
                         }}, [
                             h(".wrapped", "{{a[2].type === 'list' ? a[1].join('\\n') : a[1]}}")
                         ])
@@ -122,9 +142,10 @@ export default class EditorUi extends Vue {
     private sortBy = "deck";
     private desc = false;
     private data: any[] = [];
+    private canFetch = true;
+    private checkedIds: Set<number> = new Set();
 
-    private recentlyUpdated = false;
-    private colWidths = {
+    private readonly colWidths = {
         checkbox: 50,
         extra: 250
     }
@@ -136,12 +157,12 @@ export default class EditorUi extends Vue {
     }
 
     public updated() {
-        if (!this.recentlyUpdated) {
+        if (this.canFetch) {
             this.fetchData();
         }
     }
 
-    private getEditorLabel() {
+    get editorLabel() {
         const from = this.count === 0 ? 0 : this.offset + 1;
         let to = this.offset + this.data.length;
         if (to < from) {
@@ -151,11 +172,11 @@ export default class EditorUi extends Vue {
         return `${from}-${to} of ${this.count}`;
     }
 
-    private getTableWidth(): number {
+    get tableWidth(): number {
         return (
             this.colWidths.checkbox +
             this.cols.map((c) => c.width).reduce((a, v) => a + v) 
-            + (this.extraCols.length * this.colWidths.extra))
+            + (this.extraCols.length * this.colWidths.extra)) + 150
     }
 
     private getOrderedDict(d: any): any[][] {
@@ -167,8 +188,42 @@ export default class EditorUi extends Vue {
         return output;
     }
 
+    private onSearchbarKeypress(evt: any) {
+        if (evt.key === "Enter") {
+            this.fetchData();
+        } else {
+            this.q = evt.target.value;
+        }
+    }
+
+    private onCheckboxClicked(evt: any, id?: number) {
+        const checkboxMain = this.$refs["checkbox.main"] as HTMLInputElement;
+
+        if (id) {
+            const checkboxCurrent = evt.target as HTMLInputElement;
+            if (checkboxCurrent.checked) {
+                this.checkedIds.add(id);
+            } else {
+                this.checkedIds.delete(id);
+            }
+            checkboxMain.indeterminate = this.checkedIds.size > 0 && this.checkedIds.size < this.data.length;
+        } else {
+            checkboxMain.indeterminate = false;
+            if (checkboxMain.checked) {
+                this.data.forEach((d) => {
+                    this.checkedIds.add(d.id);
+                });
+            } else {
+                this.checkedIds.clear();
+            }
+        }
+
+        this.$forceUpdate();
+    }
+
+    @Watch("offset")
     private async fetchData() {
-        this.recentlyUpdated = true;
+        this.canFetch = false;
 
         if (isNaN(this.offset)) {
             this.offset = this.count - this.limit;
@@ -176,12 +231,15 @@ export default class EditorUi extends Vue {
             this.offset = 0;
         }
 
-        const r = await fetchJSON("/api/editor/", {q: this.q, offset: this.offset, limit: this.limit,
+        const r = await fetchJSON("/api/editor/", {q: this.q, offset: this.offset, limit: this.limit, 
             sortBy: this.sortBy, desc: this.desc});
 
         this.data = r.data;
         this.count = r.count;
-        this.offset = r.offset;
+
+        const checkboxMain = this.$refs["checkbox.main"] as HTMLInputElement;
+        checkboxMain.indeterminate = false;
+        this.checkedIds.clear();
 
         this.extraCols = [];
         for (const d of this.data) {
@@ -193,9 +251,5 @@ export default class EditorUi extends Vue {
                 }
             }
         }
-
-        setTimeout(() => {
-            this.recentlyUpdated = false;
-        }, 100);
     }
 }

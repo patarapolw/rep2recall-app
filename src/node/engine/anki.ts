@@ -90,11 +90,19 @@ export default class Anki {
             max: 0
         });
 
-        const sourceId = dst.source.insertOne({
-            name: this.filename,
-            h: md5hasher(fs.readFileSync(this.filepath)),
-            created: new Date()
-        }).$loki;
+        let sourceId: number;
+        try {
+            sourceId = dst.source.insertOne({
+                name: this.filename,
+                h: md5hasher(fs.readFileSync(this.filepath)),
+                created: new Date()
+            }).$loki;
+        } catch (e) {
+            this.callback({
+                error: `Duplicated resource: ${this.filename}`
+            });
+            return;
+        }
 
         this.mediaNameToId = {} as any;
 
@@ -169,11 +177,16 @@ export default class Anki {
 
         const count = (() => {
             let i = 0;
-            const stmt = this.db.prepare("SELECT id FROM cards");
-            while (stmt.step()) {
-                i++;
-            }
-            return i;
+            const stmt = this.db.prepare(`
+            SELECT
+                COUNT(*)
+            FROM cards AS c
+            INNER JOIN decks AS d ON d.id = did
+            INNER JOIN notes AS n ON n.id = nid
+            INNER JOIN models AS m ON m.id = n.mid
+            INNER JOIN templates AS t ON t.mid = n.mid`);
+            stmt.step();
+            return stmt.get()[0] as number;
         })();
 
         const entries = [] as IInsertEntry[];

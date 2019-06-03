@@ -167,7 +167,7 @@ export class Db {
             const {front, back, mnemonic, tag, srsLevel, nextReview, templateId, noteId, created, modified} = l;
             const deck = r.name;
             return {id: l.$loki, front, back, mnemonic, tag, srsLevel, nextReview, templateId, noteId, deck,
-            created, modified};
+            created, modified,};
         }).eqJoin(this.template, "templateId", "$loki", (l, r: ITemplate) => {
             delete l.$loki;
             delete l.meta;
@@ -177,8 +177,14 @@ export class Db {
             delete l.$loki;
             delete l.meta;
             delete l.noteId;
-            return {...l, entry: r.name, data: r.data};
-        }).data();
+            return {...l, entry: r.name, data: r.data, sourceId: r.sourceId};
+        }).eqJoin(this.source, "sourceId", "$loki", (l, r: ISource) => {
+            delete l.$loki;
+            delete l.meta;
+            delete l.noteId;
+            return {...l, source: r.name};
+        })
+        .data();
     }
 
     public insertMany(entries: IInsertEntry[]): number[] {
@@ -269,3 +275,61 @@ export class Db {
 }
 
 export default Db;
+
+interface IJoinCollection<T> {
+    data: T[];
+    key: keyof T;
+}
+
+function fullJoin<T, U>(
+    colL: IJoinCollection<T>,
+    colR: IJoinCollection<U>,
+    mapFn: (l: T, r: U) => any,
+    isFull: boolean = true
+): any[] {
+    const joinMapL: any = {};
+    const joinMapR: any = {};
+    const result: any[] = [];
+
+    for (const rowR of colR.data) {
+        const v = rowR[colR.key];
+
+        if (v) {
+            joinMapR[v] = joinMapR[v] || [];
+            joinMapR[v].push(rowR);
+        } else {
+            result.push({} as T, rowR);
+        }
+    }
+
+    for (const rowL of colL.data) {
+        const v = rowL[colL.key];
+
+        if (v) {
+            for (const vR of joinMapR[v] || [{}]) {
+                result.push(mapFn(rowL, vR));
+            }
+
+            if (isFull) {
+                joinMapL[v] = joinMapL[v] || [];
+                joinMapL[v].push(rowL);
+            }
+        } else {
+            result.push(mapFn(rowL, {} as U));
+        }
+    }
+
+    if (isFull) {
+        for (const rowR of colR.data) {
+            const v = rowR[colR.key];
+
+            if (v) {
+                for (const vL of joinMapL[v] || [{}]) {
+                    result.push(mapFn(vL, rowR));
+                }
+            }
+        }
+    }
+
+    return result;
+}

@@ -53,6 +53,10 @@ import DatetimeNullable from "./editor/DatetimeNullable";
                     ":key": "c.name"
                 }}),
                 h("col", {attrs: {
+                    "v-if": "hasSource",
+                    ":style": "{width: colWidths.extra + 'px'}"
+                }}),
+                h("col", {attrs: {
                     "v-for": "c in extraCols",
                     ":style": "{width: colWidths.extra + 'px'}",
                     ":key": "'data.' + c"
@@ -75,6 +79,10 @@ import DatetimeNullable from "./editor/DatetimeNullable";
                         "scope": "col"
                     }}, "{{ c.label || makeCamelSpaced(c.name) }}"),
                     h("th", {attrs: {
+                        "v-if": "hasSource",
+                        "scope": "col"
+                    }}, "Source"),
+                    h("th", {attrs: {
                         "v-for": "c in extraCols",
                         ":key": "'data.' + c",
                         "scope": "col"
@@ -85,7 +93,9 @@ import DatetimeNullable from "./editor/DatetimeNullable";
                 h("tr.fixed-header-offset"),
                 h("tr", {attrs: {
                     "v-for": "d in data",
-                    ":key": "d.id"
+                    ":key": "d.id",
+                    "v-on:click": "onTableRowClicked(d.id)",
+                    ":class": "{selected: checkedIds.has(d.id)}"
                 }}, [
                     h("td", {style: {width: "50px"}}, [
                         h("div", [
@@ -118,6 +128,15 @@ import DatetimeNullable from "./editor/DatetimeNullable";
                         ])
                     ]),
                     h("td", {attrs: {
+                        "v-if": "hasSource"
+                    }}, [
+                        h(".wrapper", {attrs: {
+                            ":style": "{width: (colWidths.extra - 20) + 'px'}"
+                        }}, [
+                            h(".wrapped", "{{d.source}}")
+                        ])
+                    ]),
+                    h("td", {attrs: {
                         "v-for": "c in extraCols",
                         ":key": "'data.' + c"
                     }}, [
@@ -135,6 +154,7 @@ import DatetimeNullable from "./editor/DatetimeNullable";
 export default class EditorUi extends Vue {
     private cols = Columns;
     private extraCols: string[] = [];
+    private hasSource = false;
     private q = "";
     private offset = 0;
     private limit = 10;
@@ -169,7 +189,7 @@ export default class EditorUi extends Vue {
             to = from;
         }
 
-        return `${from}-${to} of ${this.count}`;
+        return `${from.toLocaleString()}-${to.toLocaleString()} of ${this.count.toLocaleString()}`;
     }
 
     get tableWidth(): number {
@@ -221,6 +241,15 @@ export default class EditorUi extends Vue {
         this.$forceUpdate();
     }
 
+    private onTableRowClicked(id: number) {
+        if (this.checkedIds.has(id)) {
+            this.checkedIds.delete(id);
+        } else {
+            this.checkedIds.add(id);
+        }
+        this.$forceUpdate();
+    }
+
     @Watch("offset")
     private async fetchData() {
         this.canFetch = false;
@@ -251,5 +280,6 @@ export default class EditorUi extends Vue {
                 }
             }
         }
+        this.hasSource = (this.extraCols.length > 0);
     }
 }

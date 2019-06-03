@@ -29,6 +29,7 @@
     "fastify-log": "^1.0.3",
     "fastify-multipart": "^1.0.0",
     "fastify-static": "^2.4.0",
+    "fastify-websocket": "^0.5.0",
     "make-promises-safe": "^5.0.0",
     "moment": "^2.24.0",
     "parsimmon": "^1.12.0",

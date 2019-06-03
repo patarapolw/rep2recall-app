@@ -103,6 +103,12 @@ $nav-button-size: 70px;
             }
         }
 
+        tr {
+            &.selected {
+                background: lightblue;
+            }
+        }
+
         .fixed-header-offset {
             height: $control-height;
         }
@@ -119,62 +125,6 @@ $nav-button-size: 70px;
     width: 3em;
     display: inline-block;
     text-align: right;
-}
-
-.table-div {
-    $table-offset: 50px;
-    $table-thead-height: 40px;
-
-    .table-thead-div {
-        overflow: scroll;
-        top: $table-offset;
-        height: $table-thead-height;
-        position: fixed;
-        width: 100%;
-        background: white;
-        scrollbar-width: none;
-        -ms-overflow-style: none;
-
-        &::-webkit-scrollbar {
-            width: 0px;  /* Remove scrollbar space */
-            background-color: transparent;  /* Optional: just make scrollbar invisible */
-            margin: 0;
-            padding: 0;
-        }
-
-        > div {
-            height: $table-thead-height;
-
-            > * {
-                display: inline-block;
-                height: $table-thead-height;
-                font-weight: bold !important;
-                border-bottom: 1px solid black;
-                bottom: 0;
-                overflow: visible;
-        
-                > * {
-                    display: grid;
-                    height: 100%;
-        
-                    > input {
-                        margin: auto;
-                    }
-                }
-        
-                > p {
-                    margin-top: 10px;
-                    margin-left: 10px;
-                }
-            }
-        }
-    }
-
-    table {
-        top: $table-offset + $table-thead-height;
-        position: absolute;
-        z-index: -100;
-    }
 }
 
 .datetime-nullable {

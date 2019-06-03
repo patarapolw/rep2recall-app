@@ -25,3 +25,4 @@ export const Columns: IColumn[] = [
 ];
 
 export const DateFormat = "Y-M-d H:i";
+export const ServerPort = 41547;

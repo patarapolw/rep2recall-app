@@ -1,4 +1,5 @@
 import showdown from "showdown";
+import { ServerPort } from "./shared";
 
 export function shuffle(a: any[]) {
     for (let i = a.length - 1; i > 0; i--) {
@@ -13,7 +14,7 @@ export function toTitle(s: string) {
 }
 
 export async function fetchJSON(url: string, data: any = {}, method: string = "POST"): Promise<any> {
-    const res = await fetch(url, {
+    const res = await fetch(new URL(url, `http://localhost:${ServerPort}`).href, {
         method,
         headers: {
             "Content-Type": "application/json; charset=utf-8"

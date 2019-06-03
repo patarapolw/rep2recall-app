@@ -4,6 +4,8 @@ import Config from "./config";
 import multipart from "fastify-multipart";
 import cors from "fastify-cors";
 import fStatic from "fastify-static";
+// @ts-ignore
+import fSocket from "fastify-websocket";
 import rimraf from "rimraf";
 import path from "path";
 import editorRouter from "./api/editor";
@@ -23,6 +25,7 @@ f.register(multipart);
 f.register(fStatic, {
     root: path.dirname(Config.COLLECTION)
 });
+f.register(fSocket);
 
 f.register(editorRouter, { prefix: "/api/editor/" });
 f.register(ioRouter, { prefix: "/api/io/" })

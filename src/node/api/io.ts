@@ -22,34 +22,24 @@ export default (f: FastifyInstance, opt: any, next: any) => {
         });
     });
 
-    f.post("/anki/progress", (req, reply) => {
-        const id: string = req.body.id;
+    // @ts-ignore
+    f.get("/anki/progress/", {websocket: true}, (conn) => {
+        conn.socket.on("message", (msg: any) => {
+            const id = msg;
 
-        reply.res.writeHead(200, {
-            "Content-Type": "application/x-ndjson",
-            "Transfer-Encoding": "chunked",
-            "X-Content-Type-Options": "nosniff"
-        });
-
-        const stream = new Readable({
-            read() {
-                try {
-                    const anki = new Anki(path.join(Config.UPLOAD_FOLDER, id), idToFilename[id], (p: any) => {
-                        console.log(p),
-                        this.push(JSON.stringify(p) + "\n");
-                    });
-                    anki.export(Config.DB!);
-                    anki.close();
-                } catch (e) {
-                    this.push(JSON.stringify({
-                        error: e.toString()
-                    }) + "\n");
-                }
-                this.push(null);
+            try {
+                const anki = new Anki(path.join(Config.UPLOAD_FOLDER, id), idToFilename[id], (p: any) => {
+                    console.log(p);
+                    conn.socket.send(JSON.stringify(p));
+                });
+                anki.export(Config.DB!);
+                anki.close();
+            } catch (e) {
+                conn.socket.send(JSON.stringify({
+                    error: e.toString()
+                }));
             }
         });
-
-        reply.send(stream);
     });
 
     next();

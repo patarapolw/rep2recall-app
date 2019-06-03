@@ -1,6 +1,7 @@
 import { Vue, Component, Watch } from "vue-property-decorator";
 import h from "hyperscript";
 import swal from "sweetalert";
+import { ServerPort } from "./shared";
 
 @Component({
     template: h(".container.mt-3", [
@@ -95,42 +96,23 @@ export default class ImportUi extends Vue {
             });
             const { id } = JSON.parse(xhr.responseText);
 
-            fetch("/api/io/anki/progress", {
-                method: "POST",
-                body: JSON.stringify({
-                    id,
-                    filename: this.importFile!.name
-                }),
-                headers: {
-                    "Content-Type": "application/json"
-                }
-            }).then((r) => {
-                const reader = r.body!.getReader();
-                const textDecoder = new TextDecoder();
-                let finished = false;
+            const ws = new WebSocket(`ws://localhost:${ServerPort}/api/io/anki/progress/`);
 
-                (async () => {
-                    while (!finished) {
-                        const {value, done} = await reader.read();
-                        if (done) {
-                            finished = true;
-                            (this.$refs.uploadModal as any).hide();
-                        }
+            ws.onopen = () => {
+                ws.send(id);
+            };
 
-                        const p = textDecoder.decode(value).trimRight();
-                        console.log(p);
-
-                        try {
-                            const allLogs = p.split("\n");
-                            this.progress = JSON.parse(allLogs[allLogs.length - 1]);
-                            console.log(this.progress);
-                        } catch (e) {}
+            ws.onmessage = (msg) => {
+                try {
+                    this.progress = JSON.parse(msg.data);
+                    if (this.progress.error || !this.progress.text) {
+                        ws.close();
                     }
-                })();
-            });
+                } catch (e) {}
+            };
         };
 
-        xhr.open("POST", "/api/io/anki/import");
+        xhr.open("POST", `http://localhost:${ServerPort}/api/io/anki/import`);
         xhr.send(formData);
     }
 

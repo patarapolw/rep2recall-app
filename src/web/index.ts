@@ -3,6 +3,8 @@ import "./index.scss";
 import Vue from "vue";
 import VueRouter from "vue-router";
 import BootstrapVue from "bootstrap-vue";
+// @ts-ignore
+import VueSimplemde from "vue-simplemde";
 import "bootstrap";
 import $ from "jquery";
 import QuizUi from "./QuizUi";
@@ -14,6 +16,7 @@ $(() => $('.tooltip-enabled').tooltip());
 
 Vue.use(VueRouter);
 Vue.use(BootstrapVue);
+Vue.use(VueSimplemde);
 
 const router = new VueRouter({
     routes: [

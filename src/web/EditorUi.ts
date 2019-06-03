@@ -3,9 +3,10 @@ import h from "hyperscript";
 import { Columns } from "./shared";
 import { makeCamelSpaced, fetchJSON } from "./util";
 import DatetimeNullable from "./editor/DatetimeNullable";
+import EntryEditor from "./editor/EntryEditor";
 
 @Component({
-    components: {DatetimeNullable},
+    components: {DatetimeNullable, EntryEditor},
     template: h(".stretched.editor-window", [
         h(".editor-control", [
             h("button.btn", {attrs: {
@@ -21,14 +22,28 @@ import DatetimeNullable from "./editor/DatetimeNullable";
             h("button.btn", {attrs: {
                 "v-on:click": "offset = NaN"
             }}, ">>"),
-            h("div", {attrs: {
-                "v-if": "checkedIds.size > 0"
-            }}, [
-                h("button.btn.btn-outline-success.editor-button", {attrs: {
-                    "v-if": "checkedIds.size === 1"
-                }}, "Edit"),
-                h("button.btn.btn-outline-secondary.mr-3", "Change Deck"),
-                h("button.btn.btn-outline-danger.editor-button", "Delete"),
+            h("div", [
+                h("b-button", {attrs: {
+                    "variant": "outline-success",
+                    "v-b-modal.new-entry-modal": ""
+                }}, "New card"),
+                h("span", {attrs: {
+                    "v-if": "checkedIds.size > 0"
+                }}, [
+                    h("b-button.editor-button", {attrs: {
+                        "variant": "outline-primary",
+                        "v-b-modal.edit-entry-modal": "",
+                        "v-if": "checkedIds.size === 1"
+                    }}, "Edit"),
+                    h("b-button.mr-3", {attrs: {
+                        "variant": "outline-secondary",
+                        "v-b-modal.change-deck-modal": ""
+                    }}, "Change Deck"),
+                    h("b-button.editor-button", {attrs: {
+                        "variant": "outline-danger",
+                        "v-b-modal.delete-entry-modal": ""
+                    }}, "Delete"),
+                ])
             ]),
             h(".editor-input", [
                 h("input.form-control", {
@@ -148,6 +163,29 @@ import DatetimeNullable from "./editor/DatetimeNullable";
                     ])
                 ])
             ])
+        ]),
+        h("entry-editor", {attrs: {
+            "id": "new-entry-modal",
+            "title": "Create new entry"
+        }}),
+        h("entry-editor", {attrs: {
+            "id": "edit-entry-modal",
+            "title": "Edit entry",
+            ":entry-id": "Array.from(checkedIds)[0]"
+        }}),
+        h("b-modal", {attrs: {
+            "id": "delete-entry-modal",
+            "title": "Delete confirmation"
+        }}, [
+            h("div", "Are you sure you want to delete selected cards?")
+        ]),
+        h("b-modal", {attrs: {
+            "id": "change-deck-modal",
+            "title": "Rename decks"
+        }}, [
+            h("input.form-control", {
+                placeholder: "What do you want to rename to?"
+            })
         ])
     ]).outerHTML
 })

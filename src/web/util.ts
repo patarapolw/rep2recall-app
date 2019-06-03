@@ -1,5 +1,6 @@
 import showdown from "showdown";
 import { ServerPort } from "./shared";
+import TdService from "turndown";
 
 export function shuffle(a: any[]) {
     for (let i = a.length - 1; i > 0; i--) {
@@ -33,12 +34,19 @@ export async function fetchJSON(url: string, data: any = {}, method: string = "P
     }
 }
 
-const md = new showdown.Converter({
+const mdConverter = new showdown.Converter({
     tables: true
 });
 
-export function md2html(s?: string) {
-    return md.makeHtml(s || "");
+export function md2html(s: string): string {
+    return mdConverter.makeHtml(s);
+}
+
+const td = new TdService();
+td.remove("script");
+
+export function html2md(s: string): string {
+    return td.turndown(s);
 }
 
 export function makeCamelSpaced(s: string): string {

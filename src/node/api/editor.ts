@@ -19,8 +19,8 @@ export default (f: FastifyInstance, opt: any, next: any) => {
         return {
             data: q.sort((a, b) => sorter(a, b, sortBy, desc)).slice(offset, offset + limit)
             .map((c) => {
-                const data = c.data || {};
                 if (/@md5\n/.test(c.front)) {
+                    const data = c.data || {};
                     c.front = simpleMustacheRender(c.tFront || "", data);
                     c.back = c.back || simpleMustacheRender(c.tBack || "", data);
                 }
@@ -38,8 +38,9 @@ export default (f: FastifyInstance, opt: any, next: any) => {
         const c = db.getAll().filter(mongoToFilter(cond))[0];
     
         if (/@md5\n/.test(c.front)) {
-            c.front = c.tFront || "";
-            c.back = c.back || c.tBack;
+            const data = c.data || {};
+            c.front = simpleMustacheRender(c.tFront || "", data);
+            c.back = c.back || simpleMustacheRender(c.tBack || "", data);
         }
     
         return c;

@@ -196,7 +196,13 @@ export class SearchParser {
 
 export function sorter(a: any, b: any, sortBy: string, desc: boolean) {
     function convert(x: any) {
-        let v = x[sortBy];
+        let v;
+        if (sortBy.indexOf("data.") === 0 && x.data) {
+            v = x.data[sortBy];
+        } else {
+            v = x[sortBy];
+        }
+
         if (!v && v !== 0) {
             v = -Infinity;
         }

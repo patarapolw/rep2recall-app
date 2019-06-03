@@ -6,6 +6,7 @@ $fa-font-path: '~@fortawesome/fontawesome-free/webfonts';
 @import "~@fortawesome/fontawesome-free/scss/regular.scss";
 @import "~@fortawesome/fontawesome-free/scss/solid.scss";
 @import "~@fortawesome/fontawesome-free/scss/brands.scss";
+@import "~simplemde/dist/simplemde.min";
 
 $nav-button-size: 70px;
 
@@ -142,4 +143,23 @@ iframe {
     margin: 0 auto;
     height: 100px;
     width: 100px;
+}
+
+.col-form-label, .datetime-nullable.input-group {
+    padding: 0;
+}
+
+.markdown-editor {
+    .CodeMirror, .CodeMirror-scroll {
+        height: 150px;
+        min-height: 150px;
+    }
+
+    .Codemirror-fullscreen .CodeMirror {
+        height: auto;
+    }
+
+    .Codemirror-fullscreen .CodeMirror-scroll {
+        height: 100%;
+    }
 }

@@ -4,17 +4,7 @@ Repeat until you can recall, as a Desktop app.
 
 Download: <https://github.com/patarapolw/rep2recall/releases>
 
-![](/screenshots/front.png?raw=true)
-
-![](/screenshots/deck.png?raw=true)
-
-![](/screenshots/deck1.png?raw=true)
-
-![](/screenshots/quiz1.png?raw=true)
-
-![](/screenshots/quiz2.png?raw=true)
-
-![](/screenshots/cardEditor.png?raw=true)
+![](http://g.recordit.co/6qMffliqFv.gif)
 
 ## Features
 

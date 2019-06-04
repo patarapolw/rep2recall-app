@@ -1,4 +1,16 @@
 .treeview {
+    ul {
+        list-style: none;
+    }
+
+    li {
+        user-select: none;
+
+        .tree-text:hover {
+            color: blue;
+        }
+    }
+
     .caret {
         width: 2em;
         display: inline-block;
@@ -6,6 +18,7 @@
     
     .tree-score {
         padding-right: 50px;
+        display: inline-flex;
 
         > * {
             width: 3em;
@@ -23,6 +36,29 @@
 
         > .tree-due {
             color: blue;
+        }
+
+        > .tree-action {
+            display: inline-flex;
+            margin-left: 1em;
+            margin-top: 0.3em;
+            height: 0.7em;
+
+            > button {
+                flex: 0;
+                padding-left: 0.3em;
+                padding-right: 0.3em;
+            }
+        }
+        
+        .dot-green {
+            margin-top: -0.2em;
+            height: 0.5em;
+            width: 0.5em;
+            background-color: #28a745;
+            border: 1px solid gray;
+            border-radius: 50%;
+            display: inline-flex;
         }
     }
 }

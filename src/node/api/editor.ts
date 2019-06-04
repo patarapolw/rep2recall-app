@@ -58,9 +58,7 @@ export default (f: FastifyInstance, opt: any, next: any) => {
             db.update(id, req.body.update);
         } else if (req.body.ids) {
             const ids: number[] = req.body.ids;
-            ids.forEach((id) => {
-                db.update(id, req.body.update);
-            });
+            db.update(ids, req.body.update);
         }
     
         return { error: null };

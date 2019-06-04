@@ -38,11 +38,11 @@ import swal from "sweetalert";
                     }}, "Edit"),
                     h("b-button.mr-3", {attrs: {
                         "variant": "outline-secondary",
-                        "v-b-modal.change-deck-modal": ""
+                        "v-on:click": "changeDeck"
                     }}, "Change Deck"),
                     h("b-button.editor-button", {attrs: {
                         "variant": "outline-danger",
-                        "v-b-modal.delete-entry-modal": ""
+                        "v-on:click": "deleteCards"
                     }}, "Delete"),
                 ])
             ]),
@@ -50,7 +50,7 @@ import swal from "sweetalert";
                 h("input.form-control", {
                     placeholder: "Type here to search",
                     attrs: {
-                        ":value": "q",
+                        "v-model": "q",
                         "v-on:keyup": "onSearchbarKeypress",
                         "spellcheck": "false",
                         "autocomplete": "off",
@@ -179,43 +179,15 @@ import swal from "sweetalert";
         ]),
         h("entry-editor", {attrs: {
             "id": "new-entry-modal",
-            "title": "Create new entry"
+            "title": "Create new entry",
+            "v-on:ok": "onEntrySaved"
         }}),
         h("entry-editor", {attrs: {
             "id": "edit-entry-modal",
             "title": "Edit entry",
-            ":entry-id": "Array.from(checkedIds)[0]"
-        }}),
-        h("b-modal", {attrs: {
-            "id": "delete-entry-modal",
-            "title": "Delete confirmation",
-            "v-on:ok": "onDelete"
-        }}, [
-            h("div", "Are you sure you want to delete selected cards?"),
-            h("div", {attrs: {
-                "slot": "modal-footer",
-                "slot-scope": "{cancel, ok}"
-            }}, [
-                h("b-button.mr-2", {attrs: {
-                    "variant": "outline-secondary",
-                    "v-on:click": "cancel()"
-                }}, "Cancel"),
-                h("b-button", {attrs: {
-                    "variant": "danger",
-                    "v-on:click": "ok()"
-                }}, "OK")
-            ])
-        ]),
-        h("b-modal", {attrs: {
-            "id": "change-deck-modal",
-            "title": "Rename decks",
-            "v-on:ok": "onRenameDeck"
-        }}, [
-            h("input.form-control", {attrs: {
-                placeholder: "What do you want to rename to?",
-                "v-model": "newDeckName"
-            }})
-        ])
+            ":entry-id": "Array.from(checkedIds)[0]",
+            "v-on:ok": "onEntrySaved"
+        }})
     ]).outerHTML
 })
 export default class EditorUi extends Vue {
@@ -231,7 +203,6 @@ export default class EditorUi extends Vue {
     private data: any[] = [];
     private canFetch = true;
     private checkedIds: Set<number> = new Set();
-    private newDeckName = "";
 
     private readonly colWidths = {
         checkbox: 50,
@@ -276,23 +247,47 @@ export default class EditorUi extends Vue {
         return output;
     }
 
-    private async onDelete() {
-        await fetchJSON("/api/editor/", {ids: Array.from(this.checkedIds)}, "DELETE")
+    private async onEntrySaved(data: any) {
+        if (data.id) {
+            await fetchJSON("/api/editor/", {id: data.id, update: data}, "PUT");
+        } else {
+            await fetchJSON("/api/editor/", {create: data}, "PUT");
+        }
+
         await swal({
-            text: "Deleted",
+            text: data.id ? "Updated" : "Created",
             icon: "success"
-        })
+        });
         this.fetchData();
     }
 
-    private async onRenameDeck() {
-        if (this.newDeckName) {
+    private async deleteCards() {
+        const r = await swal({
+            text: "Are you sure you want to delete the following cards",
+            buttons: [true, true],
+            dangerMode: true
+        })
+
+        if (r) {
+            await fetchJSON("/api/editor/", {ids: Array.from(this.checkedIds)}, "DELETE");
+            this.fetchData();
+        }
+    }
+
+    private async changeDeck() {
+        const deck = await swal({
+            text: "What do you want to rename the deck to?",
+            content: {
+                element: "input"
+            }
+        })
+
+        if (deck) {
             await fetchJSON("/api/editor/", {
                 ids: Array.from(this.checkedIds),
-                update: {
-                    deck: this.newDeckName
-                }
+                update: {deck}
             }, "PUT")
+
             this.fetchData();
         }
     }
@@ -300,8 +295,6 @@ export default class EditorUi extends Vue {
     private onSearchbarKeypress(evt: any) {
         if (evt.key === "Enter") {
             this.fetchData();
-        } else {
-            this.q = evt.target.value;
         }
     }
 

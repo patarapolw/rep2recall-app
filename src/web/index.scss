@@ -87,3 +87,37 @@ iframe {
         height: 100%;
     }
 }
+
+.flatten {
+    display: none;
+}
+
+.needs-validation.was-validated {
+    .form-not-required {
+        border: 1px solid #28a745;
+        border-radius: 0.25rem;
+    }
+
+    .form-required {
+        border: 1px solid red;
+        border-radius: 0.25rem;
+    }
+}
+
+button.dropdown-toggle {
+    width: 10px;
+    min-width: 10px;
+    padding-left: 0px;
+}
+
+.nav-icon {
+    width: 70px;
+    height: 70px;
+    font-size: 50px;
+    text-decoration: none !important;
+    color: darkblue;
+
+    &:hover {
+        color: blue;
+    }
+}

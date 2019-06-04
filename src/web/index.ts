@@ -10,6 +10,7 @@ import $ from "jquery";
 import QuizUi from "./QuizUi";
 import EditorUi from "./EditorUi";
 import ImportUi from "./ImportUi";
+import "./contextmenu";
 
 // @ts-ignore
 $(() => $('.tooltip-enabled').tooltip());
@@ -31,30 +32,22 @@ const app = new Vue({
     router,
     template: h(".stretched", [
         h(".navbar.float-left", [
-            h("div", [
-                h("router-link.far.fa-question-circle.tooltip-enabled", {
-                    title: "Quiz",
-                    attrs: {to: "/quiz"}
-                })
-            ]),
-            h("div", [
-                h("router-link.far.fa-edit.tooltip-enabled", {
-                    title: "Editor",
-                    attrs: {to: "/editor"}
-                })
-            ]),
-            h("div", [
-                h("router-link.fas.fa-file-import.tooltip-enabled", {
-                    title: "Import",
-                    attrs: {to: "/import"}
-                })
-            ]),
-            h("div", [
-                h("a.fab.fa-github.tooltip-enabled", {
-                    title: "About",
-                    href: "https://github.com/patarapolw/rep2recall-kt"
-                })
-            ])
+            h("router-link.far.fa-question-circle.tooltip-enabled.nav-icon", {
+                title: "Quiz",
+                attrs: {to: "/quiz"}
+            }),
+            h("router-link.far.fa-edit.tooltip-enabled.nav-icon", {
+                title: "Editor",
+                attrs: {to: "/editor"}
+            }),
+            h("router-link.fas.fa-file-import.tooltip-enabled.nav-icon", {
+                title: "Import",
+                attrs: {to: "/import"}
+            }),
+            h("a.fab.fa-github.tooltip-enabled.nav-icon", {
+                title: "About",
+                href: "https://github.com/patarapolw/rep2recall-kt"
+            })
         ]),
         h(".body", [
             h("router-view")

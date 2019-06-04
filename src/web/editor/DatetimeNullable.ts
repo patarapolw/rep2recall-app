@@ -1,4 +1,4 @@
-import { Vue, Component, Prop } from "vue-property-decorator";
+import { Vue, Component, Prop, Emit } from "vue-property-decorator";
 import h from "hyperscript";
 import flatpickr from "flatpickr";
 import { DateFormat } from "../shared";
@@ -9,21 +9,20 @@ import { DateFormat } from "../shared";
     }}, [
         h("input.form-control", {attrs: {
             "ref": "flatpickr",
-            ":value": "value_"
+            ":value": "value"
         }}),
         h(".input-group-append", [
             h("button.btn.btn-outline-danger.input-group-text", {attrs: {
-                ":disabled": "!value_",
+                ":disabled": "!value",
                 "v-on:click": "setNull"
             }}, "×")
         ])
     ]).outerHTML
 })
 export default class DatetimeNullable extends Vue {
-    @Prop() value!: string;
     @Prop() width!: number;
 
-    private value_: string = this.value || "";
+    private value: string = "";
     private flatpickr?: flatpickr.Instance;
 
     public mounted() {
@@ -33,8 +32,8 @@ export default class DatetimeNullable extends Vue {
             dateFormat: DateFormat,
             onClose: (dates) => {
                 if (dates.length > 0) {
-                    this.value_ = dates[0].toISOString();
-                    this.$forceUpdate();
+                    this.value = dates[0].toISOString();
+                    this.$emit("input", this.value);
                 }
             }
         })
@@ -45,7 +44,7 @@ export default class DatetimeNullable extends Vue {
     }
 
     public setNull() {
-        this.value_ = "";
+        this.value = "";
         this.flatpickr!.clear();
     }
 }

@@ -1,6 +1,8 @@
 import { Vue, Component, Prop, Watch } from "vue-property-decorator";
 import h from "hyperscript";
 import quizState from "./shared";
+import { normalizeArray, fetchJSON } from "../util";
+import swal from "sweetalert";
 
 interface ITreeViewStat {
     new: number;
@@ -18,7 +20,7 @@ export interface ITreeViewItem {
 
 @Component({
     template: h("li", {attrs: {
-        ":style": "{display: isDeleted ? 'none' : 'block'}"
+        "v-if": "!isDeleted"
     }}, [
         h("span", [
             h(".caret", {attrs: {
@@ -32,26 +34,28 @@ export interface ITreeViewItem {
                 }})
             ]),
             h("span.tree-text", {attrs: {
-                "v-on:click": "onTreeTextClicked"
+                "ref": "tree-text",
+                "v-on:click": "startReview()"
             }}, "{{ data.name }}"),
             h(".float-right.text-align-right.tree-score", {attrs: {
                 "v-if": "isShownStat"
             }}, [
                 h("span.tree-new", "{{ data.stat.new.toLocaleString() }}"),
                 h("span.tree-leech", "{{ data.stat.leech.toLocaleString() }}"),
-                h("span.tree-due", "{{ data.stat.due.toLocaleString() }}"),
+                h("span.tree-due", "{{ data.stat.due.toLocaleString() }}")
             ])
         ]),
         h("ul", {attrs: {
-            "v-if": "data.children",
-            ":style": "{ display: isOpen ? 'block' : 'none' }"
+            "v-if": "data.children && isOpen"
         }}, [
             h("treeview-item", {attrs: {
                 "v-for": "c in data.children",
                 ":key": "c.fullName",
                 ":data": "c",
                 ":q": "q",
-                ":parent-is-open": "isOpen"
+                ":parent-is-open": "isOpen",
+                ":on-review": "onReview",
+                ":on-delete": "onDelete"
             }})
         ])
     ]).outerHTML
@@ -60,6 +64,8 @@ export default class TreeviewItem extends Vue {
     @Prop() private data!: ITreeViewItem;
     @Prop() private q!: string;
     @Prop() private parentIsOpen!: boolean;
+    @Prop() private onReview!: (deck: string, type?: string) => any;
+    @Prop() private onDelete!: (deck: string) => Promise<boolean>;
 
     private isOpen = false;
     private isShownStat = true;
@@ -73,10 +79,23 @@ export default class TreeviewItem extends Vue {
     }
 
     public mounted() {
-        $(".tree-text", this.$el).first().data({
-            deck: this.data.fullName,
-            delete: () => this.isDeleted = true
+        $(normalizeArray(this.$refs["tree-text"])).data({
+            dueAndNew: () => this.startReview(),
+            due: () => this.startReview("due"),
+            leech: () => this.startReview("leech"),
+            new: () => this.startReview("new"),
+            all: () => this.startReview("all"),
+            delete: async () => {
+                if (await this.onDelete(this.data.fullName)) {
+                    this.isDeleted = true;
+                }
+            }
         });
+        this.updateStat();
+    }
+
+    private async startReview(type?: string) {
+        await this.onReview(this.data.fullName, type);
         this.updateStat();
     }
 
@@ -90,17 +109,6 @@ export default class TreeviewItem extends Vue {
         }
     }
 
-    private initQuiz(deckName: string) {
-        setTimeout(() => {
-            this.state.isQuizReady = true;
-            this.readMq();
-        }, 400);
-
-        this.state.q = this.q;
-        this.state.currentDeck = deckName;
-        this.state.isQuizStarted = true;
-    }
-
     private readMq(mq: MediaQueryListEvent | MediaQueryList = this.state.mediaQuery) {
         if (mq.matches && this.state.isQuizShown) {
             this.state.isDeckHidden = true;
@@ -111,10 +119,5 @@ export default class TreeviewItem extends Vue {
 
     private onCaretClicked() {
         this.isOpen = !this.isOpen;
-    }
-
-    private onTreeTextClicked() {
-        this.state.isQuizShown = true;
-        this.initQuiz(this.data.fullName);
     }
 }

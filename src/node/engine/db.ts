@@ -238,12 +238,18 @@ export class Db {
         return res.map((c) => c.$loki);
     }
 
-    public update(id: number, u: Partial<IInsertEntry>) {
+    public update(id: number | number[], u: Partial<IInsertEntry>) {
         const c = this.transformUpdate(u);
         c.modified = new Date();
-        return this.card.updateWhere((c0) => c0.$loki === id, (c0) => {
-            return Object.assign(c0, c);
-        });
+        if (Array.isArray(id)) {
+            return this.card.updateWhere((c0) => id.indexOf(c0.$loki) !== -1, (c0) => {
+                return Object.assign(c0, c);
+            });
+        } else {
+            return this.card.updateWhere((c0) => c0.$loki === id, (c0) => {
+                return Object.assign(c0, c);
+            });
+        }
     }
 
     private transformUpdate(u: Partial<IInsertEntry>): Partial<ICard> {

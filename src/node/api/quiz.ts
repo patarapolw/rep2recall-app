@@ -32,16 +32,40 @@ export default (f: FastifyInstance, opt: any, next: any) => {
             ]})
         }
 
-        if (req.body.due) {
-            const m = /(-?\d+(?:\.\d+)?\S+)/.exec(req.body.due);
+        if (req.body.type !== "all") {
+            const type: string = req.body.type;
+            if (type === "due") {
+                andCond.push({nextReview: {$lte: moment().toISOString()}});
+            } else if (type === "leech") {
+                andCond.push({
+                    srsLevel: 0
+                })
+            } else if (type === "new") {
+                andCond.push({
+                    nextReview: {$exists: false}
+                })
+            } else {
+                andCond.push({$or: [
+                    {nextReview: {$exists: false}},
+                    {nextReview: {$lte: moment().toISOString()}}
+                ]});
+            }
+        }
+
+        const due = req.body.due;
+        if (due) {
+            const m = /(-?\d+(?:\.\d+)?\S+)/.exec(due);
             if (m) {
                 andCond.push({nextReview: {$lte: moment().add(parseFloat(m[1]), m[2] as any).toISOString()}})
             } else {
-                andCond.push({nextReview: {$lte: moment().toISOString()}})
+                andCond.push({$or: [
+                    {nextReview: {$exists: false}},
+                    {nextReview: {$lte: moment().toISOString()}}
+                ]})
             }
-        } else {
-            andCond.push({nextReview: {$lte: moment().toISOString()}});
         }
+
+        console.log(JSON.stringify(andCond));
 
         const ids = db.getAll().filter(mongoToFilter({$and: andCond})).map((c) => c.id)
         return {ids};

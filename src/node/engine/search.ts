@@ -289,7 +289,7 @@ function mongoCompare(v: any, ck: any): boolean {
             } else if (op === "$lt") {
                 return v < v0;
             } else if (op === "$exists") {
-                return (v !== undefined) === v0;
+                return (!!v && v !== 0) === v0;
             } else if (op === "$in") {
                 return (v0 as any[]).some((a) => a === v);
             }

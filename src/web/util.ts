@@ -15,21 +15,31 @@ export function toTitle(s: string) {
 }
 
 export async function fetchJSON(url: string, data: any = {}, method: string = "POST"): Promise<any> {
-    const res = await fetch(new URL(url, `http://localhost:${ServerPort}`).href, {
-        method,
-        headers: {
-            "Content-Type": "application/json; charset=utf-8"
-        },
-        body: JSON.stringify(data)
-    });
+    const start = new Date().getSeconds();
+    
+    while (new Date().getSeconds() - start < 10) {
+        try {
+            const res = await fetch(new URL(url, `http://localhost:${ServerPort}`).href, {
+                method,
+                headers: {
+                    "Content-Type": "application/json; charset=utf-8"
+                },
+                body: JSON.stringify(data)
+            });
 
-    try {
-        return await res.json();
-    } catch (e) {
-        if (res.status < 400) {
-            return res.status;
-        } else {
-            throw e;
+            try {
+                return await res.json();
+            } catch (e) {
+                if (res.status < 400) {
+                    return res.status;
+                } else {
+                    throw e;
+                }
+            }
+        } catch (e) {
+            await new Promise((resolve) => {
+                setTimeout(resolve, 1000);
+            })
         }
     }
 }

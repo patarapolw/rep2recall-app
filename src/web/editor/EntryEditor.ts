@@ -14,7 +14,7 @@ import { makeCamelSpaced, fetchJSON, normalizeArray, html2md } from "../util";
     }}, [
         h("form.col-12", [
             h(".col-12.mb-3", {attrs: {
-                "v-for": "c in cols",
+                "v-for": "c in activeCols",
                 ":key": "c.name"
             }}, [
                 h(".row", [
@@ -35,6 +35,7 @@ import { makeCamelSpaced, fetchJSON, normalizeArray, html2md } from "../util";
                     }}),
                     h("input.form-control.col-sm-10", {attrs: {
                         "v-else": "",
+                        ":placeholder": "c.type === 'list' ? 'Please input tags separated by spaces' : ''",
                         ":value": "data[c.name]"
                     }})
                 ])
@@ -52,6 +53,10 @@ export default class EntryEditor extends Vue {
     private readonly size = "lg";
     private readonly cols = Columns;
     private readonly makeCamelSpaced = makeCamelSpaced
+
+    get activeCols() {
+        return this.cols.filter((c) => !this.entryId ? c.newEntry !== false : true);
+    }
     
     private onModalShown() {
         if (this.entryId) {

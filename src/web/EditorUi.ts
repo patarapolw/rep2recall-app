@@ -177,7 +177,20 @@ import EntryEditor from "./editor/EntryEditor";
             "id": "delete-entry-modal",
             "title": "Delete confirmation"
         }}, [
-            h("div", "Are you sure you want to delete selected cards?")
+            h("div", "Are you sure you want to delete selected cards?"),
+            h("div", {attrs: {
+                "slot": "modal-footer",
+                "slot-scope": "{cancel, ok}"
+            }}, [
+                h("b-button.mr-2", {attrs: {
+                    "variant": "outline-secondary",
+                    "v-on:click": "cancel()"
+                }}, "Cancel"),
+                h("b-button", {attrs: {
+                    "variant": "danger",
+                    "v-on:click": "ok()"
+                }}, "OK")
+            ])
         ]),
         h("b-modal", {attrs: {
             "id": "change-deck-modal",

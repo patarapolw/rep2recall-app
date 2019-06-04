@@ -15,7 +15,7 @@ export interface IColumn {
 
 export const Columns: IColumn[] = [
     {name: "deck", width: 150, type: "string", required: true},
-    {name: "template", width: 150, type: "string"},
+    {name: "template", width: 150, type: "string", newEntry: false},
     {name: "front", width: 400, type: "html", required: true},
     {name: "back", width: 400, type: "html"},
     {name: "tag", width: 150, type: "list", separator: " "},

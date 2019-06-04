@@ -52,16 +52,14 @@ export default (f: FastifyInstance, opt: any, next: any) => {
             const id = db.insertMany([req.body.create])[0];
             return {id};
         }
-    
-        const id: number = req.body.id;
-    
-        if (req.body.update) {
+
+        if (req.body.id) {
+            const id: number = req.body.id;
             db.update(id, req.body.update);
-        } else {
-            const fieldName: string = req.body.fieldName;
-            const fieldData: any = req.body.fieldData;
-            db.update(id, {
-                [fieldName]: fieldData
+        } else if (req.body.ids) {
+            const ids: number[] = req.body.ids;
+            ids.forEach((id) => {
+                db.update(id, req.body.update);
             });
         }
     
@@ -77,9 +75,15 @@ export default (f: FastifyInstance, opt: any, next: any) => {
     });
 
     f.delete("/", async (req) => {
-        const id: number = req.body.id;
         const db = Config.DB!;
-        db.card.removeWhere((c) => c.$loki === id);
+
+        if (req.body.id) {
+            const id: number = req.body.id;
+            db.card.removeWhere((c) => c.$loki === id);
+        } else if (req.body.ids) {
+            const ids: Set<number> = new Set(req.body.ids);
+            db.card.removeWhere((c) => ids.has(c.$loki));
+        }
     
         return { error: null };
     });

@@ -1,0 +1,80 @@
+.editor-window {
+    $control-height: 50px;
+
+    .editor-control {
+        z-index: 200;
+        height: 3em;
+        width: 100%;
+        background-color: rgb(233, 233, 233);
+        align-items: center;
+        display: flex;
+        top: 0px;
+        height: $control-height;
+        position: fixed;
+    
+        > button, span {
+            padding: 1em;
+        }
+
+        .editor-button {
+            width: 100px;
+            margin-right: 1em;
+
+            .dropdown-toggle-split {
+                width: 0 !important;
+            }
+        }
+    
+        .editor-input {
+            position: fixed;
+            right: 1em;
+            width: 300px;
+        }
+    }
+
+    table {
+        $thead-height: 50px;
+
+        thead {
+            position: sticky;
+            position: -webkit-sticky;
+            top: $control-height;
+            height: $thead-height;
+            z-index: 100;
+            background-color: rgba($color: white, $alpha: 0.8);
+
+            th {
+                position: sticky;
+                position: -webkit-sticky;
+                top: $control-height;
+                height: $thead-height;
+                z-index: 100;
+                background-color: rgba($color: white, $alpha: 0.8);
+
+                > a {
+                    color: black;
+
+                    &:hover {
+                        color: blue;
+                    }
+                }
+            }
+        }
+
+        tr {
+            &.selected {
+                background: lightblue;
+            }
+        }
+
+        .fixed-header-offset {
+            height: $control-height;
+        }
+    }
+
+    .wrapper {
+        overflow: scroll;
+        max-height: 150px;
+        max-width: 400px;
+    }
+}

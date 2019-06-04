@@ -10,7 +10,12 @@ import { fetchJSON } from "./util";
             h("input.form-control", {
                 placeholder: "Type here to search",
                 attrs: {
-                    "v-on:keyup": "onInputKeypress"
+                    ":value": "q",
+                    "v-on:keyup": "onInputKeypress",
+                    "spellcheck": "false",
+                    "autocomplete": "off",
+                    "autocorrect": "off",
+                    "autocapitalize": "off"
                 }
             }, "{{ q }}"),
             h(".input-group-append", [

@@ -21,7 +21,7 @@ export interface ITreeViewItem {
         ":style": "{display: isDeleted ? 'none' : 'block'}"
     }}, [
         h("span", [
-            h("span.caret", {attrs: {
+            h(".caret", {attrs: {
                 "v-on:click": "onCaretClicked"
             }}, [
                 h("i.fas.fa-chevron-down", {attrs: {

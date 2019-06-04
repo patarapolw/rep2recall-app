@@ -4,6 +4,7 @@ import { Columns } from "./shared";
 import { makeCamelSpaced, fetchJSON } from "./util";
 import DatetimeNullable from "./editor/DatetimeNullable";
 import EntryEditor from "./editor/EntryEditor";
+import swal from "sweetalert";
 
 @Component({
     components: {DatetimeNullable, EntryEditor},
@@ -50,7 +51,11 @@ import EntryEditor from "./editor/EntryEditor";
                     placeholder: "Type here to search",
                     attrs: {
                         ":value": "q",
-                        "v-on:keyup": "onSearchbarKeypress"
+                        "v-on:keyup": "onSearchbarKeypress",
+                        "spellcheck": "false",
+                        "autocomplete": "off",
+                        "autocorrect": "off",
+                        "autocapitalize": "off"
                     }
                 })
             ])
@@ -92,7 +97,15 @@ import EntryEditor from "./editor/EntryEditor";
                         "v-for": "c in cols",
                         ":key": "c.name",
                         "scope": "col"
-                    }}, "{{ c.label || makeCamelSpaced(c.name) }}"),
+                    }}, [
+                        h("a", {attrs: {
+                            "href": "#",
+                            "v-on:click": "onTableHeaderClicked(c.name)"
+                        }}, "{{ c.label || makeCamelSpaced(c.name) }}"),
+                        h("span", {attrs: {
+                            "v-if": "sortBy === c.name"
+                        }}, "{{ desc ? ' ▲' : ' ▼'}}")
+                    ]),
                     h("th", {attrs: {
                         "v-if": "hasSource",
                         "scope": "col"
@@ -175,7 +188,8 @@ import EntryEditor from "./editor/EntryEditor";
         }}),
         h("b-modal", {attrs: {
             "id": "delete-entry-modal",
-            "title": "Delete confirmation"
+            "title": "Delete confirmation",
+            "v-on:ok": "onDelete"
         }}, [
             h("div", "Are you sure you want to delete selected cards?"),
             h("div", {attrs: {
@@ -194,11 +208,13 @@ import EntryEditor from "./editor/EntryEditor";
         ]),
         h("b-modal", {attrs: {
             "id": "change-deck-modal",
-            "title": "Rename decks"
+            "title": "Rename decks",
+            "v-on:ok": "onRenameDeck"
         }}, [
-            h("input.form-control", {
-                placeholder: "What do you want to rename to?"
-            })
+            h("input.form-control", {attrs: {
+                placeholder: "What do you want to rename to?",
+                "v-model": "newDeckName"
+            }})
         ])
     ]).outerHTML
 })
@@ -215,6 +231,7 @@ export default class EditorUi extends Vue {
     private data: any[] = [];
     private canFetch = true;
     private checkedIds: Set<number> = new Set();
+    private newDeckName = "";
 
     private readonly colWidths = {
         checkbox: 50,
@@ -259,6 +276,27 @@ export default class EditorUi extends Vue {
         return output;
     }
 
+    private async onDelete() {
+        await fetchJSON("/api/editor/", {ids: Array.from(this.checkedIds)}, "DELETE")
+        await swal({
+            text: "Deleted",
+            icon: "success"
+        })
+        this.fetchData();
+    }
+
+    private async onRenameDeck() {
+        if (this.newDeckName) {
+            await fetchJSON("/api/editor/", {
+                ids: Array.from(this.checkedIds),
+                update: {
+                    deck: this.newDeckName
+                }
+            }, "PUT")
+            this.fetchData();
+        }
+    }
+
     private onSearchbarKeypress(evt: any) {
         if (evt.key === "Enter") {
             this.fetchData();
@@ -292,6 +330,15 @@ export default class EditorUi extends Vue {
         this.$forceUpdate();
     }
 
+    private onTableHeaderClicked(name: string) {
+        if (this.sortBy === name) {
+            this.desc = !this.desc
+        } else {
+            this.sortBy = name
+            this.desc = false
+        }
+    }
+
     private onTableRowClicked(id: number) {
         if (this.checkedIds.has(id)) {
             this.checkedIds.delete(id);
@@ -302,6 +349,8 @@ export default class EditorUi extends Vue {
     }
 
     @Watch("offset")
+    @Watch("sortBy")
+    @Watch("desc")
     private async fetchData() {
         this.canFetch = false;
 

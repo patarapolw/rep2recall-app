@@ -1,0 +1,28 @@
+.treeview {
+    .caret {
+        width: 2em;
+        display: inline-block;
+    }
+    
+    .tree-score {
+        padding-right: 50px;
+
+        > * {
+            width: 3em;
+            display: inline-block;
+            text-align: right;
+        }
+
+        > .tree-new {
+            color: green;
+        }
+
+        > .tree-leech {
+            color: red;
+        }
+
+        > .tree-due {
+            color: blue;
+        }
+    }
+}

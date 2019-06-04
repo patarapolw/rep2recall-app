@@ -242,7 +242,7 @@ export class Db {
         const c = this.transformUpdate(u);
         c.modified = new Date();
         return this.card.updateWhere((c0) => c0.$loki === id, (c0) => {
-            return Object.assign(c0, u);
+            return Object.assign(c0, c);
         });
     }
 

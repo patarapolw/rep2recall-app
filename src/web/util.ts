@@ -1,6 +1,7 @@
 import showdown from "showdown";
 import { ServerPort } from "./shared";
 import TdService from "turndown";
+import swal from "sweetalert";
 
 export function shuffle(a: any[]) {
     for (let i = a.length - 1; i > 0; i--) {
@@ -41,6 +42,17 @@ export async function fetchJSON(url: string, data: any = {}, method: string = "P
                 setTimeout(resolve, 1000);
             })
         }
+    }
+
+    // @ts-ignore
+    const r = await swal({
+        text: "Cannot connect to server. Retry?",
+        icon: "error",
+        buttons: true
+    })
+
+    if (r) {
+        await fetchJSON(url, data, method);
     }
 }
 

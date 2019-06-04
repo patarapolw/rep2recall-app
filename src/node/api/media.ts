@@ -1,14 +1,14 @@
-import { FastifyInstance } from "fastify";
 import Config from "../config";
+import { Router } from "express";
 
-export default (f: FastifyInstance, opt: any, next: any) => {
-    f.get("/:id", async (req) => {
-        const db = Config.DB!;
-        const id: number = parseInt(req.params.id);
-        const m = db.media.findOne({$loki: id});
+const router = Router();
 
-        return m.data.buffer;
-    });
+router.get("/:id", (req, res) => {
+    const db = Config.DB!;
+    const id: number = parseInt(req.params.id);
+    const m = db.media.findOne({$loki: id});
 
-    next();
-};
+    return res.send(m.data.buffer);
+});
+
+export default router;

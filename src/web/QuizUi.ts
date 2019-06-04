@@ -45,6 +45,7 @@ import EntryEditor from "./editor/EntryEditor";
             "id": "quiz-modal",
             "scrollable": "",
             "hide-header": "",
+            "v-on:show": "onQuizShown",
             "v-on:hide": "getTreeViewData"
         }}, [
             h("iframe", {attrs: {
@@ -53,34 +54,41 @@ import EntryEditor from "./editor/EntryEditor";
                 "width": "450",
                 "frameBorder": "0"
             }}),
-            h("div", {attrs: {
-                "slot": "modal-footer"
+            h(".w-100.d-flex.justify-content-between", {attrs: {
+                "slot": "modal-footer",
             }}, [
-                h("button.btn.btn-warning.ml-2", {attrs: {
-                    "v-if": "currentQuizIndex > 0",
-                    "v-on:click": "onQuizPreviousButtonClicked",
-                }}, "Previous"),
-                h("button.btn.btn-primary.ml-2", {attrs: {
-                    "v-if": "!quizShownAnswer && currentQuizIndex >= 0",
-                    "v-on:click": "onQuizShowButtonClicked"
-                }}, "Show"),
-                h("button.btn.btn-success.ml-2", {attrs: {
-                    "v-if": "quizShownAnswer",
-                    "v-on:click": "onQuizRightButtonClicked"
-                }}, "Right"),
-                h("button.btn.btn-danger.ml-2", {attrs: {
-                    "v-if": "quizShownAnswer",
-                    "v-on:click": "onQuizWrongButtonClicked"
-                }}, "Wrong"),
-                h("b-button.ml-2", {attrs: {
-                    "variant": "info",
-                    "v-if": "quizShownAnswer",
-                    "v-b-modal.edit-entry-modal": ""
-                }}, "Edit"),
-                h("button.btn.btn-warning.ml-2", {attrs: {
-                    "v-if": "quizIds.length > 0 && currentQuizIndex < quizIds.length - 1",
-                    "v-on:click": "onQuizNextButtonClicked"
-                }}, "Next")
+                h("div", {style: {width: "50px"}}, [
+                    h("button.btn.btn-secondary", {attrs: {
+                        "v-if": "currentQuizIndex > 0",
+                        "v-on:click": "onQuizPreviousButtonClicked",
+                    }}, "<")
+                ]),
+                h("div", [
+                    h("button.btn.btn-primary.ml-2", {attrs: {
+                        "v-if": "!quizShownAnswer && currentQuizIndex >= 0",
+                        "v-on:click": "onQuizShowButtonClicked"
+                    }}, "Show"),
+                    h("button.btn.btn-success.ml-2", {attrs: {
+                        "v-if": "quizShownAnswer",
+                        "v-on:click": "onQuizRightButtonClicked"
+                    }}, "Right"),
+                    h("button.btn.btn-danger.ml-2", {attrs: {
+                        "v-if": "quizShownAnswer",
+                        "v-on:click": "onQuizWrongButtonClicked"
+                    }}, "Wrong"),
+                    h("b-button.ml-2", {attrs: {
+                        "variant": "info",
+                        "v-if": "quizShownAnswer",
+                        "v-b-modal.edit-entry-modal": ""
+                    }}, "Edit"),
+                ]),
+                h("div", {style: {width: "50px"}}, [
+                    h("b-button.float-right", {attrs: {
+                        "v-if": "quizIds.length > 0",
+                        "v-on:click": "onQuizNextButtonClicked",
+                        ":variant": "currentQuizIndex < quizIds.length - 1 ? 'secondary' : 'success'"
+                    }}, ">")
+                ])
             ])
         ]),
         h("entry-editor", {attrs: {
@@ -118,8 +126,14 @@ export default class QuizUi extends Vue {
         }
     }
 
-    private async getTreeViewData() {
+    private onQuizShown() {
         this.currentQuizIndex = -1;
+        this.quizIds = [];
+        this.quizShownAnswer = false;
+        this.quizContent = "";
+    }
+
+    private async getTreeViewData() {
         this.isLoading = true;
         this.data = await fetchJSON("/api/quiz/treeview", {q: this.q});
         this.isLoading = false;
@@ -180,8 +194,16 @@ export default class QuizUi extends Vue {
     }
 
     private async onQuizNextButtonClicked() {
-        this.currentQuizIndex++;
-        await this.renderQuizContent();
+        if (this.currentQuizIndex < this.quizIds.length - 1) {
+            this.currentQuizIndex++;
+            await this.renderQuizContent();
+        } else {
+            await swal({
+                text: "Quiz is done!",
+                icon: "success"
+            });
+            this.$bvModal.hide("quiz-modal");
+        }
     }
 
     private onQuizShowButtonClicked() {

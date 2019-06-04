@@ -146,8 +146,9 @@ import swal from "sweetalert";
                         }}),
                         h("datetime-nullable", {attrs: {
                             "v-else-if": "a[2].type === 'datetime'",
-                            ":value": "a[1]",
-                            "width": "220"
+                            "v-model": "a[1]",
+                            "width": "220",
+                            "readonly": "true"
                         }}),
                         h(".wrapper", {attrs: {
                             "v-else": "",

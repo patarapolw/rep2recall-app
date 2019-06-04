@@ -5,9 +5,8 @@ import { fork } from "child_process";
 const serverProcess = fork(path.join(__dirname, "server.min.js"));
 
 let mainWindow: Electron.BrowserWindow | null;
-let openedFilePath: string | null = null;
 
-function createWindow(filename: string | null) {
+function createWindow() {
     mainWindow = new BrowserWindow({
         height: 768,
         width: 1024,
@@ -17,7 +16,7 @@ function createWindow(filename: string | null) {
     });
     mainWindow.maximize();
 
-    mainWindow.loadFile("index.html");
+    mainWindow.loadFile(path.join(__dirname, "index.html"));
 
     const openExternalLinksInOSBrowser = (event: any, url: string) => {
         if (url.match(/.*localhost.*/gi) === null && (url.startsWith("http:") || url.startsWith("https:"))) {
@@ -35,7 +34,7 @@ function createWindow(filename: string | null) {
 }
 
 app.on("ready", () => {
-    createWindow(openedFilePath);
+    createWindow();
 
     const template: MenuItemConstructorOptions[] = [
         {

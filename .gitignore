@@ -42,3 +42,4 @@ user.*
 .venv/
 __pycache__
 .idea
+release/

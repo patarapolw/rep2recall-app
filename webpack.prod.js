@@ -10,7 +10,7 @@ module.exports = [
             electron: "./src/node/electron.ts"
         },
         output: {
-            path: path.join(__dirname, "build"),
+            path: path.join(__dirname, "dist"),
             filename: "[name].min.js"
         },
         target: "electron-main",
@@ -43,7 +43,7 @@ module.exports = [
         ...web,
         plugins: [
             new CopyPlugin([
-                { from: 'public', to: 'dist' }
+                { from: 'public', to: '.' }
             ]),
         ],
     }

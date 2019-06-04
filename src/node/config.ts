@@ -9,6 +9,7 @@ interface IConfig {
     DB?: Db;
     COLLECTION: string;
     UPLOAD_FOLDER: string;
+    app?: any;
 }
 
 const userDataDir = new AppDirs("rep2recall").userDataDir();

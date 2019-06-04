@@ -1,50 +1,35 @@
-import fastify from "fastify";
-import "make-promises-safe";
+import express from "express";
+import expressWs from "express-ws";
+
+const app = express();
+Config.app = expressWs(app);
+
 import Config from "./config";
-import multipart from "fastify-multipart";
-import cors from "fastify-cors";
-import fStatic from "fastify-static";
-// @ts-ignore
-import fSocket from "fastify-websocket";
 import rimraf from "rimraf";
 import path from "path";
 import editorRouter from "./api/editor";
-import ioRouter from "./api/io";
 import mediaRouter from "./api/media";
 import quizRouter from "./api/quiz";
 import Db from "./engine/db";
+import cors from "cors";
+import bodyParser from "body-parser";
 
-const f = fastify({
-    logger: {
-        prettyPrint: true
-    }
-});
+app.use(express.static(path.dirname(Config.COLLECTION)));
+app.use(cors());
+app.use(bodyParser.json());
 
-f.register(cors);
-f.register(multipart);
-f.register(fStatic, {
-    root: path.dirname(Config.COLLECTION)
-});
-f.register(fSocket);
-
-f.register(editorRouter, { prefix: "/api/editor/" });
-f.register(ioRouter, { prefix: "/api/io/" })
-f.register(mediaRouter, { prefix: "/api/media/" });
-f.register(quizRouter, { prefix: "/api/quiz/" })
+app.use("/api/editor", editorRouter);
+app.use("/api/io", require("./api/io").default);
+app.use("/api/media", mediaRouter);
+app.use("/api/quiz", quizRouter);
 
 process.on("exit", onExit);
 process.on("SIGINT", onExit);
 
 (async () => {
     Config.DB = await Db.connect(Config.COLLECTION);
-
-    try {
-        await f.listen(Config.PORT);
-    } catch (err) {
-        f.log.error(err);
-        process.exit(1);
-    }
-})()
+    app.listen(Config.PORT, () => console.log(`Server running on http://localhost:${Config.PORT}`));
+})().catch((e) => console.error(e));
 
 function onExit() {
     rimraf.sync(Config.UPLOAD_FOLDER);

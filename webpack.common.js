@@ -6,7 +6,7 @@ module.exports = {
             index: "./src/web/index.ts"
         },
         output: {
-            path: path.resolve(__dirname, "dist/web"),
+            path: path.resolve(__dirname, "dist"),
             filename: "[name].min.js"
         },
         module: {
@@ -42,7 +42,7 @@ module.exports = {
                     loader: "file-loader",
                     options: {
                         name: "[name].[ext]",
-                        // outputPath: "../fonts/"
+                        outputPath: "fonts"
                     }
                 }]
             },
@@ -52,7 +52,7 @@ module.exports = {
                     loader: 'file-loader',
                     options: {
                         name: '[name].[ext]',
-                        // outputPath: "../images/"
+                        outputPath: "images"
                     },
                 },],
             },

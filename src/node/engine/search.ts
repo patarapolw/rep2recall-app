@@ -1,300 +1,394 @@
-import P from "parsimmon";
-import XRegExp from "xregexp";
+import { escapeRegExp } from "../util";
 import moment from "moment";
+import uuid from "uuid/v4";
 
-export interface ISearchParserRule {
-    anyOf?: string[];
-    isString?: string[];
-    isDate?: string[];
+export interface ISearchParserResult {
+    is: Set<string>;
+    sortBy?: string;
+    desc: boolean;
+    cond: {[key: string]: any};
+    fields: Set<string>;
 }
+
 
 export class SearchParser {
-    private lang: P.Language;
+    private is: Set<string> = new Set();
+    private sortBy?: string;
+    private desc = false;
+    private cond: any;
+    private fields: Set<string> = new Set();
 
-    constructor(rule: ISearchParserRule = {
-        anyOf: ["template", "front", "mnemonic", "entry", "deck", "tag"],
-        isString: ["template", "front", "back", "mnemonic", "deck", "tag", "entry"],
-        isDate: ["created", "modified", "nextReview"]
-    }) {
-        this.lang = P.createLanguage({
-            Input: (r) => P.alt(
-                r.OrSentence,
-                r.AndSentence,
-                r.Sentence
-            ),
-            OrSentence: (r) => P.seq(
-                r.Sentence,
-                P.string(" OR "),
-                r.Sentence
-            ).map((el) => {
-                return {$or: [el[0], el[2]]};
-            }),
-            AndSentence: (r) => P.seq(
-                r.Sentence,
-                P.string(" "),
-                r.Sentence
-            ).map((el) => {
-                return {$and: [el[0], el[2]]};
-            }),
-            Sentence: (r) => P.alt(
-                r.Bracketed,
-                r.OrExpr,
-                r.AndExpr,
-                r.Expr
-            ),
-            Bracketed: (r) => P.string("(").then(r.Sentence).skip(P.string(")")),
-            OrExpr: (r) => P.seq(
-                r.Expr,
-                P.string(" OR "),
-                r.Expr
-            ).map((el) => {
-                return {$or: [el[0], el[2]]};
-            }),
-            AndExpr: (r) => P.seq(
-                r.Expr,
-                P.string(" "),
-                r.Expr
-            ).map((el) => {
-                return {$and: [el[0], el[2]]};
-            }),
-            Expr: (r) => P.alt(
-                r.FullExpr,
-                r.PartialExpr
-            ),
-            PartialExpr: (r) => r.Value.map((el) => {
-                const expr = [] as any[];
+    private readonly anyOf = new Set(["template", "front", "mnemonic", "entry", "deck", "tag"]);
+    private readonly isString = new Set(["template", "front", "back", "mnemonic", "deck", "tag", "entry"]);
+    private readonly isDate = new Set(["created", "modified", "nextReview"]);
 
-                if (rule.anyOf) {
-                    for (const col of rule.anyOf) {
-                        let def = {[col]: el};
+    public doParse(q: string): ISearchParserResult | null {
+        this.is = new Set();
+        this.sortBy = undefined;
+        this.desc = false;
+        this.cond = undefined;
+        this.fields = new Set();
 
-                        if (!rule.isString || (rule.isString && rule.isString.indexOf(col) !== -1)) {
-                            def = {[col]: {$regex: XRegExp.escape(el.toString())}};
-                        }
-
-                        expr.push(def);
-                    }
-                } else if (rule.isString) {
-                    for (const col of rule.isString) {
-                        expr.push({[col]: {$regex: XRegExp.escape(el.toString())}});
-                    }
-                }
-
-                if (expr.length === 0) {
-                    throw new Error("Any or String not set");
-                } else if (expr.length === 1) {
-                    return expr[0];
-                }
-
-                return {$or: expr};
-            }),
-            FullExpr: (r) => P.seq(
-                r.String,
-                r.Op,
-                r.Value
-            ).map((el: any[]) => {
-// tslint:disable-next-line: prefer-const
-                let [k, op, v] = el;
-
-                if (k === "is") {
-                    if (v === "due") {
-                        k = "nextReview";
-                        op = "<=";
-                        v = moment().toISOString();
-                    } else if (v === "leech") {
-                        k = "srsLevel";
-                        v = 0;
-                    } else if (v === "new") {
-                        k = "srsLevel";
-                        v = "NULL";
-                    }
-                }
-
-                if (v === "NULL") {
-                    return {$or: [
-                        {[k]: ""},
-                        {[k]: {$exists: false}}
-                    ]};
-                }
-
-                if (rule.isDate && rule.isDate.indexOf(k) !== -1) {
-                    const m = /^([-+]?\d+)(\S+)$/.exec(v.toString());
-
-                    if (m) {
-                        v = moment().add(moment.duration(parseInt(m[1]), m[2] as any)).toISOString();
-                        op = "<=";
-                    } else if (v === "now") {
-                        v = moment().toISOString();
-                        op = "<=";
-                    }
-                }
-
-                switch (op) {
-                    case ":":
-                        if (typeof v === "string") {
-                            v = {$regex: XRegExp.escape(v)};
-                        } else if (rule.isString && rule.isString.indexOf(k) !== -1) {
-                            v = {$regex: XRegExp.escape(v.toString())};
-                        }
-                        break;
-                    case "~":
-                        v = {$regex: v.toString()};
-                        break;
-                    case ">=":
-                        v = {$gte: v};
-                        break;
-                    case ">":
-                        v = {$gt: v};
-                        break;
-                    case "<=":
-                        v = {$lte: v};
-                        break;
-                    case "<":
-                        v = {$lt: v};
-                        break;
-                    case "=":
-                    default:
-                }
-                // result[k] = v;
-
-                return {[k]: v};
-            }),
-            Value: (r) => P.alt(
-                r.Number,
-                r.String
-            ),
-            Number: () => P.regexp(/^\d+(?:\.\d+)?$/).map(Number),
-            String: (r) => P.alt(
-                r.RawString,
-                r.QuoteString
-            ),
-            RawString: () => P.regexp(/[^" :>=<~]+/),
-            QuoteString: (r) => r.Quote.then(r.Value).skip(r.Quote),
-            Quote: () => P.string('"'),
-            Op: () => P.alt(
-                P.string(":"),
-                P.string("~"),
-                P.string(">="),
-                P.string(">"),
-                P.string("<="),
-                P.string("<"),
-                P.string("=")
-            ),
-            _: () => P.optWhitespace
-        });
+        try {
+            this.parse(q);
+            return {
+                cond: this.cond || {},
+                is: this.is,
+                sortBy: this.sortBy,
+                desc: this.desc,
+                fields: this.fields
+            };
+        } catch (e) {
+            return null;
+        }
     }
 
-    public parse(s?: string) {
-        const r = this.lang.Input.parse(s || "");
-        if (!r.status) {
-            return {};
-        } else {
-            return r.value;
+    private parse(q: string): any {
+        for (const method of [
+            this.removeBrackets,
+            this.parseSep(" OR "),
+            this.parseSep(" "),
+            this.parseNeg,
+            this.parseFullExpr,
+            this.parsePartialExpr
+        ]) {
+            try {
+                return method(q);
+            } catch (e) {};
         }
+
+        throw new Error();
+    }
+
+    private removeBrackets(q: string) {
+        if (q[0] === "(" && q[q.length - 1] === ")") {
+            return q.substr(1, q.length - 2);
+        }
+
+        throw new Error();
+    }
+
+    private parseSep(sep: string) {
+        return (q: string) => {
+            const brackets: any = {};
+
+            q = q.replace(/\([^)]+\)/g, (p0) => {
+                const id = uuid();
+                brackets[id] = p0;
+                return id;
+            });
+            const tokens = q.split(sep);
+            tokens.forEach((t, i) => {
+                for (const k of Object.keys(brackets)) {
+                    tokens[i] = tokens[i].replace(k, brackets[k]);
+                }
+            });
+
+            if (tokens.length >= 2) {
+                const parsedTokens = tokens.map((t) => this.parse(t)).map((t) => t);
+                if (parsedTokens.length > 1) {
+                    return {[sep === " OR " ? "$or": "$and"]: parsedTokens};
+                } else {
+                    return parsedTokens[0];
+                }
+            }
+
+            throw new Error();
+        }
+    }
+
+    private parseNeg(q: string) {
+        if (q[0] === "-") {
+            const sb = "-sortBy:";
+            if (q.startsWith(sb) && q !== sb) {
+                this.sortBy = q.substr(sb.length);
+                return;
+            }
+
+            return {$not: this.parse(q.substr(1))};
+        }
+
+        throw new Error();
+    }
+
+    private parseFullExpr(q: string) {
+        const m = /^([\w-]+)(:|~|[><]=?|=)([\w-]+|"[^"]+")$/.exec(q);
+        if (m) {
+            let [k, op, v]: any[] = m;
+
+            if (v.length > 2 && v[0] === '"' && v[v.length - 1] === '"') {
+                v = v.substr(1, v.length - 2);
+            } else {
+                const m1 = /^\d+(?:\.\d+)?$/.exec(v);
+                if (m1) {
+                    v = parseFloat(v);
+                }
+            }
+
+            if (k === "is") {
+                if (v === "due") {
+                    k = "nextReview";
+                    op = "<=";
+                    v = new Date();
+                } else if (v === "leech") {
+                    k = "srsLevel";
+                    op = "=";
+                    v = 0;
+                } else if (v === "new") {
+                    k = "nextReview";
+                    op = "=";;
+                    v = "NULL";
+                } else {
+                    this.is.add(v);
+                    return;
+                }
+            } else if (k === "sortBy") {
+                this.sortBy = v;
+                return;
+            }
+
+            if (op === ":") {
+                if (k === "due" || k === "nextReview") {
+                    k = "nextReview";
+                    v = "<="
+                } else if (k === "created" || k === "modified") {
+                    v = "<=";
+                }
+            }
+
+            if (v === "NULL") {
+                v = {$or: [
+                    {[k]: {$exists: false}},
+                    {[k]: null},
+                    {[k]: ""}
+                ]};
+            }
+
+            if (this.isDate.has(k)) {
+                if (v === "NOW") {
+                    v = new Date();
+                } else if (typeof v === "string") {
+                    const m1 = /^([-+]?\\d+)(\\S*)$/.exec(v);
+                    if (m1) {
+                        try {
+                            v = moment().add(parseInt(m1[1]), m1[2] as any).toDate();
+                        } catch (e) {}
+                    }
+                }
+            }
+
+            if (op === ":") {
+                if (typeof v === "string" || this.isString.has(k)) {
+                    v = {$regex: escapeRegExp(v)};
+                }
+            } else if (op === "~") {
+                v = {$regex: v.toString()};
+            } else if (op === ">=") {
+                v = {$gte: v};
+            } else if (op === ">") {
+                v = {$gt: v}
+            } else if (op === "<=") {
+                v = {$lte: v};
+            } else if (op === "<") {
+                v = {$lt: v};
+            }
+            
+            this.fitCondToTables(k, v, "$and");
+            return;
+        }
+
+        throw new Error();
+    }
+
+    private parsePartialExpr(q: string) {
+        if (q && q.indexOf(":") === -1) {
+            for (const a of this.anyOf) {
+                if (this.isString.has(a)) {
+                    this.fitCondToTables(a, {$regex: escapeRegExp(q)}, "$or");
+                } else {
+                    this.fitCondToTables(a, q, "$or");
+                }
+            }
+
+            this.fitCondToTables("@*", {$regex: escapeRegExp(q)}, "$or");
+            
+            return;
+        }
+
+        throw new Error();
+    }
+
+    private fitCondToTables(k: string, v: any, type: string) {
+        let cond: any;
+        this.fields.add(k);
+
+        if (k.startsWith("@")) {
+            cond = {data: {$elemMatch: {
+                key: k.substr(1),
+                value: v
+            }}};
+            this.cond = this.cond ? {[type]: [
+                this.cond, cond
+            ]} : cond;
+            return;
+        }
+
+        cond = {[k]: v};
+        this.cond = this.cond ? {[type]: [
+            this.cond.card, cond
+        ]} : cond;
     }
 }
 
-export function sorter(a: any, b: any, sortBy: string, desc: boolean) {
-    function convert(x: any) {
-        let v;
-        if (sortBy.indexOf("data.") === 0 && x.data) {
-            v = x.data[sortBy];
-        } else {
-            v = x[sortBy];
-        }
-
-        if (!v && v !== 0) {
-            v = -Infinity;
-        }
-        return v;
-    }
-
-    function compare() {
-        const m = convert(a);
-        const n = convert(b);
-        if (typeof m === "string" && typeof n === "string") {
-            return m.localeCompare(n);
-        } else if (typeof m === "string") {
-            return 1;
-        } else if (typeof n === "string") {
-            return -1;
-        } else {
-            return m - n;
-        }
-    }
-
-    return desc ? -compare() : compare();
-}
-
-export function mongoToFilter(cond: any): (item: any) => boolean {
-    return (item: any) => {
+export function mongoFilter(cond: any) {
+    return (item: any): boolean => {
         for (const k of Object.keys(cond)) {
             if (k[0] === "$") {
                 if (k === "$and") {
-                    const ck: any[] = cond[k];
-                    return ck.every((c) => mongoToFilter(c)(item));
+                    return cond[k].every((x: any) => mongoFilter(x)(item));
                 } else if (k === "$or") {
-                    const ck: any[] = cond[k];
-                    return ck.some((c) => mongoToFilter(c)(item));
+                    return cond[k].some((x: any) => mongoFilter(x)(item));
                 } else if (k === "$not") {
-                    return !mongoToFilter(cond[k])(item);
+                    return !mongoFilter(cond[k])(item);
                 }
             } else {
-                const ck: any = cond[k];
-                const v = item[k] || (item.data ? item.data[k] : undefined);
-
-                if (ck && typeof ck === "object" && Object.keys(ck).some((c) => c[0] === "$")) {
-                    return mongoCompare(v, ck);
+                let itemK;
+                if (k[0] === "@") {
+                    itemK = dataGetter(item, k.substr(1));
                 } else {
-                    if (Array.isArray(v)) {
-                        if (v.indexOf(ck) === -1) {
-                            return false;
+                    itemK = dotGetter(item, k);
+                }
+
+                if (cond[k] && cond[k].constructor === {}.constructor
+                    && Object.keys(cond[k]).some((k0) => k0[0] === "$")) {
+                    return (() => {
+                        for (const op of Object.keys(cond[k])) {
+                            try {
+                                if (op === "$regex") {
+                                    if (Array.isArray(itemK)) {
+                                        return itemK.some(new RegExp(cond[k][op].toString(), "i").test);
+                                    } else {
+                                        return new RegExp(cond[k][op].toString(), "i").test(itemK);
+                                    }
+                                } else if (op === "$startswith") {
+                                    if (Array.isArray(itemK)) {
+                                        return itemK.some((el) => el.startsWith(cond[k][op]));
+                                    } else {
+                                        return itemK.startsWith(cond[k][op]);
+                                    }
+                                } else if (op === "$exists") {
+                                    return (itemK === null || itemK === undefined || itemK === "") !== cond[k][op];
+                                } else {
+                                    let v = itemK;
+                                    let v0 = cond[k][op];
+                                    try {
+                                        [v, v0] = [parseInt(v), parseInt(v0)];
+                                    } catch (e) {}
+
+                                    if (op === "$gte") {
+                                        return v >= v0;
+                                    } else if (op === "$gt") {
+                                        return v > v0;
+                                    } else if (op === "$lte") {
+                                        return v <= v0;
+                                    } else if (op === "$lt") {
+                                        return v < v0;
+                                    }
+                                }
+                            } catch (e) {}
                         }
-                    } else {
-                        if (v !== ck) {
-                            return false;
-                        }
+                        return false;
+                    })();
+                } else if (Array.isArray(itemK)) {
+                    if (!itemK.includes(cond[k])) {
+                        return false;
                     }
+                } else if (itemK !== cond[k]) {
+                    return false;
                 }
             }
         }
 
         return true;
-    };
+    }
 }
 
-function mongoCompare(v: any, ck: any): boolean {
-    try {
-        for (const op of Object.keys(ck)) {
-            const v0 = ck[op];
-    
-            if (op === "$regex") {
-                if (Array.isArray(v)) {
-                    return v.some((b) => new RegExp(v0.toString(), "i").test(b));
-                } else {
-                    return new RegExp(v0.toString(), "i").test(v);
+export function dataGetter(d: any, k: string) {
+    k = k.toLocaleLowerCase();
+
+    if (d.data) {
+        if (k === "*") {
+            return d.data.filter((el: any) => !el.value.startsWith("@nosearch\n")).map((el: any) => el.value);
+        } else {
+            const v = d.data.filter((el: any) => el.key.toLocaleLowerCase() === k).map((el: any) => el.value);
+            return v === undefined ? null : v;
+        }
+    }
+
+    return null;
+}
+
+export function dotGetter(d: any, k: string) {
+    let v = d;
+    for (const kn of k.split(".")) {
+        if (v && v.constructor === {}.constructor) {
+            if (kn === "*") {
+                v = Object.values(v);
+            } else {
+                v = v[kn];
+                if (v === undefined) {
+                    v = {};
                 }
-            } else if (op === "$startswith") {
-                if (Array.isArray(v)) {
-                    return v.some((b) => b.indexOf(v0.toString()) === 0);
-                } else {
-                    return v.indexOf(v0.toString()) === 0;
+            }
+        } else if (Array.isArray(v)) {
+            try {
+                v = v[parseInt(kn)];
+                if (v === undefined) {
+                    v = null;
+                    break;
                 }
-            } else if (op === "$gte") {
-                return v >= v0;
-            } else if (op === "$gt") {
-                return v > v0;
-            } else if (op === "$lte") {
-                return v <= v0;
-            } else if (op === "$lt") {
-                return v < v0;
-            } else if (op === "$exists") {
-                return (!!v && v !== 0) === v0;
-            } else if (op === "$in") {
-                return (v0 as any[]).some((a) => a === v);
+            } catch (e) {
+                v = null;
+                break;
             }
         }
-    } catch (e) {}
+    }
 
-    return false;
+    if (v && v.constructor === {}.constructor && Object.keys(v).length === 0) {
+        v = null;
+    }
+
+    return v;
+}
+
+export function sorter(sortBy?: string, desc?: boolean) {
+    return (a: any, b: any) => {
+        if (!sortBy) {
+            return 0;
+        }
+
+        const m = a[sortBy];
+        const n = b[sortBy];
+
+        if (typeof m === typeof n) {
+            if (typeof m === "string") {
+                return desc ? n.localeCompare(m) : m.localeCompare(n);
+            } else if (typeof m === "number") {
+                return desc ? n - m : m - n;
+            } else {
+                return 0;
+            }
+        } else {
+            const typeDict = {
+                "number": 1,
+                "string": 2,
+                "object": 3
+            } as any;
+
+            const tM = typeDict[typeof m] || -1;
+            const tN = typeDict[typeof n] || -1;
+
+            return desc ? tN - tM : tM - tN;
+        }
+    }
 }

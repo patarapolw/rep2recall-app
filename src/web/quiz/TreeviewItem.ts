@@ -1,8 +1,7 @@
 import { Vue, Component, Prop, Watch } from "vue-property-decorator";
 import h from "hyperscript";
 import quizState from "./shared";
-import { normalizeArray, fetchJSON } from "../util";
-import swal from "sweetalert";
+import { normalizeArray } from "../util/util";
 
 interface ITreeViewStat {
     new: number;
@@ -19,6 +18,7 @@ export interface ITreeViewItem {
 }
 
 @Component({
+    name: "treeview-item",
     template: h("li", {attrs: {
         "v-if": "!isDeleted"
     }}, [
@@ -85,6 +85,12 @@ export default class TreeviewItem extends Vue {
             leech: () => this.startReview("leech"),
             new: () => this.startReview("new"),
             all: () => this.startReview("all"),
+            exportDeck: () => {
+                location.href = `/api/io/export?deck=${encodeURIComponent(this.data.fullName)}`;
+            },
+            exportDeckAndReset: () => {
+                location.href = `/api/io/export?deck=${encodeURIComponent(this.data.fullName)}&reset=true`;
+            },
             delete: async () => {
                 if (await this.onDelete(this.data.fullName)) {
                     this.isDeleted = true;

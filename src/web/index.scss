@@ -2,14 +2,13 @@
 @import "~bootstrap-vue/src/index.scss";
 @import "~flatpickr/dist/flatpickr.min";
 @import "~@fortawesome/fontawesome-free/scss/fontawesome.scss";
-$fa-font-path: '~@fortawesome/fontawesome-free/webfonts';
+$fa-font-path: "~@fortawesome/fontawesome-free/webfonts";
 @import "~@fortawesome/fontawesome-free/scss/regular.scss";
 @import "~@fortawesome/fontawesome-free/scss/solid.scss";
 @import "~@fortawesome/fontawesome-free/scss/brands.scss";
-@import "~simplemde/dist/simplemde.min";
-
-@import "css/editor.scss";
-@import "css/quiz.scss";
+@import "~toastr/toastr.scss";
+@import "~codemirror/lib/codemirror";
+@import "~codemirror/theme/base16-light";
 
 $nav-button-size: 70px;
 
@@ -20,26 +19,6 @@ $nav-button-size: 70px;
 
 .overflow-scroll {
     overflow: scroll;
-}
-
-.navbar {
-    width: $nav-button-size;
-    margin: 0;
-    padding: 0;
-
-    > * {
-        padding: 10px;
-        width: $nav-button-size;
-        height: $nav-button-size;
-        border: 0;
-        background-color: rgba($color: #000000, $alpha: 0);
-    
-        a {
-            font-size: 50px;
-            text-decoration: none;
-            color: darkblue;
-        }
-    }
 }
 
 .body {
@@ -60,31 +39,38 @@ $nav-button-size: 70px;
 
 iframe {
     margin: 0;
-    padding: 0;
+    padding: 1em;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+
+    &.html-view {
+        min-width: 400px;
+        min-height: 500px;
+    }
 }
 
-.small-spinner {
-    margin: 0 auto;
-    height: 100px;
-    width: 100px;
-}
-
-.col-form-label, .datetime-nullable.input-group {
+.col-form-label,
+.datetime-nullable.input-group {
     padding: 0;
 }
 
 .markdown-editor {
-    .CodeMirror, .CodeMirror-scroll {
+    .CodeMirror {
+        border: 1px solid lightgray;
+        padding: 0;
+    }
+
+    .CodeMirror,
+    .CodeMirror-scroll {
         height: 150px;
         min-height: 150px;
     }
 
-    .Codemirror-fullscreen .CodeMirror {
-        height: auto;
-    }
-
-    .Codemirror-fullscreen .CodeMirror-scroll {
-        height: 100%;
+    .preview {
+        padding: 0 !important;
     }
 }
 
@@ -116,8 +102,54 @@ button.dropdown-toggle {
     font-size: 50px;
     text-decoration: none !important;
     color: darkblue;
+    padding: 0.5rem 0.5rem;
 
     &:hover {
         color: blue;
     }
+}
+
+#toast-container .toast-close-button {
+    font: inherit;
+    margin-top: 0.2em;
+
+    &:hover {
+        color: blue;
+    }
+}
+
+.dropdown-toggle {
+    width: 1em !important;
+    padding-left: 0.1em !important;
+}
+
+.animated {
+    animation: simple-animation 0.8s linear;
+
+    @keyframes simple-animation {
+        99% {
+            opacity: 0.5;
+            transform: scale(1.1);
+        }
+        100% {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+}
+
+.btn:active {
+    transition: all 0.5s ease-in;
+    opacity: 0.5;
+    transform: scale(1.1);
+}
+
+input, textarea {
+    &.form-control {
+        background-color: white !important;
+    }
+}
+
+pre {
+    white-space: pre-wrap;
 }

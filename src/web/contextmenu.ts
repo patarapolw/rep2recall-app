@@ -10,26 +10,21 @@ $(() => {
             opt.$trigger.data(key)();
         },
         items: {
-            due: {
-                name: "Review due"
-            },
-            leech: {
-                name: "Review leech"
-            },
-            new: {
-                name: "Review new"
-            },
-            dueAndNew: {
-                name: "Review due and new"
-            },
+            due: {name: "Review due"},
+            leech: {name: "Review leech"},
+            new: {name: "Review new"},
+            dueAndNew: {name: "Review due and new"},
             separator1: "-----",
-            all: {
-                name: "Review all"
-            },
+            all: {name: "Review all"},
             separator2: "-----",
-            delete: {
-                name: "Delete deck"
-            }
+            exportGroup: {
+                name: "Export",
+                items: {
+                    exportDeck: {name: "Export Deck"},
+                    exportDeckAndReset: {name: "Export Deck and Reset"}
+                }
+            },
+            delete: {name: "Delete deck"}
         }
     });
 });

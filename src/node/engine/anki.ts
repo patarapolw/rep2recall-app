@@ -1,13 +1,14 @@
-import sql from "sql.js";
+import initSqlJs from "sql.js";
 import fs from "fs";
 import AdmZip from "adm-zip";
 import path from "path";
-import Db, { ITemplate, IInsertEntry, IMedia } from "./db";
-import crypto from "crypto";
-import { simpleMustacheRender } from "../util";
+import Db, { IDbMedia, IDbTemplate, IEntry, INoteDataSocket } from "./db";
+import { ankiMustache } from "../util";
+import SparkMD5 from "spark-md5";
+import { SqlJs } from "sql.js/module";
 
 export default class Anki {
-    private db: sql.Database;
+    private db!: SqlJs.Database;
     private mediaNameToId: any = {};
     private filename: string;
     private filepath: string;
@@ -29,13 +30,16 @@ export default class Anki {
         });
 
         zip.extractAllTo(this.dir);
+    }
+
+    public async export(dst: Db) {
+        const SQL = await initSqlJs();
+        this.db = new SQL.Database(fs.readFileSync(path.join(this.dir, "collection.anki2")));
 
         this.callback({
             text: "Preparing Anki resources.",
             max: 0
         });
-
-        this.db = new sql.Database(fs.readFileSync(path.join(this.dir, "collection.anki2")));
 
         const { decks, models } = (() => {
             const st = this.db.prepare("SELECT decks, models FROM col");
@@ -49,11 +53,13 @@ export default class Anki {
             name    VARCHAR NOT NULL
         )`);
 
-        const stmt = this.db.prepare("INSERT INTO decks (id, name) VALUES (?, ?)");
+        let stmt = this.db.prepare("INSERT INTO decks (id, name) VALUES (?, ?)");
 
         Object.values(JSON.parse(decks as string)).forEach((deck: any) => {
             stmt.run([deck.id, deck.name]);
         });
+
+        stmt.free();
 
         this.db.run(`
         CREATE TABLE models (
@@ -82,20 +88,22 @@ export default class Anki {
                 templateInsertStmt.run([model.id, t.name, t.qfmt, t.afmt]);
             });
         });
-    }
 
-    public export(dst: Db) {
+        modelInsertStmt.free();
+        templateInsertStmt.free();
+
         this.callback({
             text: "Writing to database",
             max: 0
         });
 
         let sourceId: number;
+        const sourceH = SparkMD5.ArrayBuffer.hash(fs.readFileSync(this.filepath))
         try {
             sourceId = dst.source.insertOne({
                 name: this.filename,
-                h: md5hasher(fs.readFileSync(this.filepath)),
-                created: new Date()
+                h: sourceH,
+                created: new Date().toISOString()
             }).$loki;
         } catch (e) {
             this.callback({
@@ -110,13 +118,13 @@ export default class Anki {
 
         Object.keys(mediaJson).forEach((k, i) => {
             const data = fs.readFileSync(path.join(this.dir, k));
-            const h = md5hasher(data);
+            const h = SparkMD5.ArrayBuffer.hash(data);
             const media = {
                 sourceId,
                 name: mediaJson[k],
                 data,
                 h
-            } as IMedia;
+            } as IDbMedia;
 
             const total = Object.keys(mediaJson).length;
             this.callback({
@@ -135,7 +143,7 @@ export default class Anki {
             this.mediaNameToId[media.name] = mediaId;
         });
 
-        const templates = [] as ITemplate[];
+        const templates = [] as IDbTemplate[];
 
         (() => {
             const stmt = this.db.prepare(`
@@ -154,6 +162,8 @@ export default class Anki {
                     sourceId
                 });
             }
+
+            stmt.free();
         })();
 
         (() => {
@@ -175,21 +185,19 @@ export default class Anki {
             }
         })();
 
-        const count = (() => {
-            let i = 0;
-            const stmt = this.db.prepare(`
-            SELECT
-                COUNT(*)
-            FROM cards AS c
-            INNER JOIN decks AS d ON d.id = did
-            INNER JOIN notes AS n ON n.id = nid
-            INNER JOIN models AS m ON m.id = n.mid
-            INNER JOIN templates AS t ON t.mid = n.mid`);
-            stmt.step();
-            return stmt.get()[0] as number;
-        })();
+        stmt = this.db.prepare(`
+        SELECT
+            COUNT(*)
+        FROM cards AS c
+        INNER JOIN decks AS d ON d.id = did
+        INNER JOIN notes AS n ON n.id = nid
+        INNER JOIN models AS m ON m.id = n.mid
+        INNER JOIN templates AS t ON t.mid = n.mid`);
+        stmt.step();
+        const count = stmt.get()[0] as number;
+        stmt.free();
 
-        const entries = [] as IInsertEntry[];
+        const entries = [] as IEntry[];
         const frontSet = new Set();
 
         (() => {
@@ -222,17 +230,20 @@ export default class Anki {
                 const { keys, values, tname, mname, deck, qfmt, tags } = stmt.getAsObject();
                 const vs = (values as string).split("\x1f");
 
-                const data = {} as any;
+                const data = [] as INoteDataSocket[];
                 (keys as string).split("\x1f").forEach((k, i) => {
-                    data[k] = vs[i];
+                    data.push({
+                        key: k,
+                        value: vs[i]
+                    });
                 });
 
-                let front = simpleMustacheRender(qfmt as string, data);
-                if (front === simpleMustacheRender(qfmt as string, {})) {
+                let front = ankiMustache(qfmt as string, data);
+                if (front === ankiMustache(qfmt as string, [])) {
                     continue;
                 }
 
-                front = `@md5\n${md5hasher(this.convertLink(front))}`;
+                front = `@md5\n${SparkMD5.hash(this.convertLink(front))}`;
 
                 if (frontSet.has(front)) {
                     continue;
@@ -246,13 +257,15 @@ export default class Anki {
                     deck: (deck as string).replace(/::/g, "/"),
                     model: mname as string,
                     template: tname as string,
-                    entry: vs[0],
+                    key: vs[0],
                     data,
                     front,
                     tag,
-                    sourceId
+                    sH: sourceH
                 });
             }
+
+            stmt.free();
         })();
 
         (() => {
@@ -286,8 +299,4 @@ export default class Anki {
             return `/media/${this.mediaNameToId[p1]}`;
         });
     }
-}
-
-export function md5hasher(s: string | Buffer) {
-    return crypto.createHash("md5").update(s).digest("hex");
 }

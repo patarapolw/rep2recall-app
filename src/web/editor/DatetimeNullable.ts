@@ -1,21 +1,20 @@
-import { Vue, Component, Prop, Emit } from "vue-property-decorator";
+import { Vue, Component, Prop } from "vue-property-decorator";
 import h from "hyperscript";
 import flatpickr from "flatpickr";
 import { DateFormat } from "../shared";
-import { normalizeArray } from "../util";
+import { normalizeArray } from "../util/util";
 
 @Component({
     template: h(".input-group.datetime-nullable", {attrs: {
         ":style": "{width: width + 'px !important'}"
     }}, [
         h("input.form-control", {attrs: {
-            "ref": "flatpickr",
-            ":value": "formatDate(value)"
+            "ref": "flatpickr"
         }}),
         h(".input-group-append", [
             h("button.btn.btn-outline-danger.input-group-text", {attrs: {
                 ":disabled": "!value",
-                "v-on:click": "setDate(null)"
+                "v-on:click": "setDate()"
             }}, "×")
         ])
     ]).outerHTML
@@ -30,31 +29,31 @@ export default class DatetimeNullable extends Vue {
     public mounted() {
         this.flatpickr = normalizeArray(flatpickr(this.$refs.flatpickr as HTMLInputElement, {
             enableTime: true,
-            defaultDate: this.value,
+            defaultDate: this.formatDate(this.value),
             dateFormat: DateFormat,
             clickOpens: !this.readonly,
             onClose: (dates) => {
                 if (dates.length > 0) {
-                    const d = dates[0].toISOString();
-                    this.setDate(d);
+                    this.setDate(dates[0]);
                 }
             }
         }))
     }
 
-    public setDate(d?: string) {
-        if (d) {
-            this.flatpickr!.setDate(this.value);
-        } else {
-            this.flatpickr!.clear();
+    public setDate(d?: Date) {
+        if (this.flatpickr) {
+            if (d) {
+                this.flatpickr.setDate(d);
+            } else {
+                this.flatpickr.clear();
+            }
         }
-        this.$emit("input", d);
+
+        this.$emit("input", d ? d.toISOString() : null);
     }
 
     public formatDate(d: string) {
-        if (d) {
-            return flatpickr.formatDate(new Date(d), DateFormat);
-        }
-        return "";
+        const dDate =  d ? new Date(d) : undefined;
+        return dDate;
     }
 }

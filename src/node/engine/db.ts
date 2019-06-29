@@ -1,62 +1,49 @@
 import Loki, { Collection } from "@lokidb/loki";
 import { FSStorage } from "@lokidb/fs-storage";
 import fs from "fs";
-import moment from "moment";
-import { IStrStrMap } from "../util";
+import SparkMD5 from "spark-md5";
+import { ankiMustache, shuffle, pp } from "../util";
+import { ISearchParserResult, mongoFilter, sorter } from "./search";
+import { srsMap, getNextReview, repeatReview } from "./quiz";
 
 FSStorage.register();
 
-declare function interfaceKeys<T extends object>(): Array<keyof T>;
-
-export interface IDeck {
+export interface IDbDeck {
     $loki?: number;
-    guid?: string;
     name: string;
-    isOpen?: boolean;
 }
 
-export interface ICard {
+export interface IDbSource {
     $loki?: number;
-    guid?: string;
-    deckId: number;
-    templateId?: number;
-    noteId?: number;
-    front: string;
-    back?: string;
-    mnemonic?: string;
-    srsLevel?: number;
-    nextReview?: Date;
-    tag?: string[];
-    created?: Date;
-    modified?: Date;
-}
-
-export interface ISource {
-    $loki?: number;
-    created: Date;
     name: string;
     h: string;
+    created: string;
 }
 
-export interface ITemplate {
-    guid?: string;
-    sourceId?: number;
+export interface IDbTemplate {
+    $loki?: number;
+    sourceId: number;
     name: string;
     model?: string;
     front: string;
     back?: string;
     css?: string;
+    js?: string;
 }
 
-export interface INote {
+export interface INoteDataSocket {
+    key: string;
+    value: string | {[k: string]: any};
+}
+
+export interface IDbNote {
     $loki?: number;
-    guid?: string;
     sourceId?: number;
-    name: string;
-    data: IStrStrMap;
+    key: string;
+    data: INoteDataSocket[];
 }
 
-export interface IMedia {
+export interface IDbMedia {
     $loki?: number;
     sourceId?: number;
     name: string;
@@ -64,40 +51,62 @@ export interface IMedia {
     h: string;
 }
 
-export interface IInsertEntry {
-    template?: string;
-    model?: string;
-    entry?: string;
-    tFront?: string;
-    tBack?: string;
-    deck: string;
+export interface IDbCard {
+    $loki?: number;
+    deckId: number;
+    templateId?: number;
+    noteId?: number;
     front: string;
     back?: string;
     mnemonic?: string;
-    srsLevel?: number;
-    nextReview?: string | Date;
-    tag?: string[];
-    data?: IStrStrMap;
-    sourceId?: number;
-}
-
-export interface ISearchEntry {
-    id: number;
-    front: string;
-    back?: string;
-    mnemonic?: string;
-    tag?: string[];
     srsLevel?: number;
     nextReview?: string;
-    deck: string;
+    tag?: string[];
     created: string;
     modified?: string;
+    stat?: {
+        streak: {right: number; wrong: number};
+    }
+}
+
+export interface IEntry {
+    front: string;
+    deck: string;
+    id?: number;
+    back?: string;
+    mnemonic?: string;
+    srsLevel?: number;
+    nextReview?: string;
+    tag?: string[];
+    created?: string;
+    modified?: string;
+    stat?: {
+        streak: {right: number; wrong: number};
+    };
     template?: string;
     model?: string;
     tFront?: string;
     tBack?: string;
-    entry?: string;
-    data?: IStrStrMap;
+    css?: string;
+    js?: string;
+    key?: string;
+    data?: INoteDataSocket[];
+    source?: string;
+    sH?: string;
+    sCreated?: string;
+}
+
+interface ICondOptions {
+    offset?: number;
+    limit?: number;
+    sortBy?: string;
+    desc?: boolean;
+    fields?: string[];
+}
+
+interface IPagedOutput<T> {
+    data: T[];
+    count: number;
 }
 
 export class Db {
@@ -113,12 +122,12 @@ export class Db {
     }
 
     public loki: Loki;
-    public deck: Collection<IDeck>;
-    public card: Collection<ICard>;
-    public source: Collection<ISource>;
-    public template: Collection<ITemplate>;
-    public note: Collection<INote>;
-    public media: Collection<IMedia>;
+    public deck: Collection<IDbDeck>;
+    public card: Collection<IDbCard>;
+    public source: Collection<IDbSource>;
+    public template: Collection<IDbTemplate>;
+    public note: Collection<IDbNote>;
+    public media: Collection<IDbMedia>;
 
     private constructor(loki: Loki) {
         this.loki = loki;
@@ -132,9 +141,7 @@ export class Db {
 
         this.card = this.loki.getCollection("card");
         if (this.card === null) {
-            this.card = this.loki.addCollection("card", {
-                unique: ["front"]
-            });
+            this.card = this.loki.addCollection("card");
         }
 
         this.source = this.loki.getCollection("source");
@@ -162,113 +169,400 @@ export class Db {
         }
     }
 
-    public getAll(): ISearchEntry[] {
-        return this.card.eqJoin(this.deck, "deckId", "$loki", (l: ICard, r: IDeck) => {
-            const {front, back, mnemonic, tag, srsLevel, nextReview, templateId, noteId, created, modified} = l;
-            const deck = r.name;
-            return {id: l.$loki, front, back, mnemonic, tag, srsLevel, nextReview, templateId, noteId, deck,
-            created, modified,};
-        }).eqJoin(this.template, "templateId", "$loki", (l, r: ITemplate) => {
-            delete l.$loki;
-            delete l.meta;
-            delete l.templateId;
-            return {...l, template: r.name, model: r.model, tFront: r.front, tBack: r.back};
-        }).eqJoin(this.note, "noteId", "$loki", (l, r: INote) => {
-            delete l.$loki;
-            delete l.meta;
-            delete l.noteId;
-            return {...l, entry: r.name, data: r.data, sourceId: r.sourceId};
-        }).eqJoin(this.source, "sourceId", "$loki", (l, r: ISource) => {
-            delete l.$loki;
-            delete l.meta;
-            delete l.noteId;
-            return {...l, source: r.name};
-        })
-        .data();
-    }
-
-    public insertMany(entries: IInsertEntry[]): number[] {
-        let decks = entries.map((e) => e.deck);
-        decks = decks.filter((d, i) => decks.indexOf(d) === i);
-        const deckIds = decks.map((d) => this.getOrCreateDeck(d));
-
-        let sourceId: number;
-        let templates = entries.filter((e) => e.model && e.template).map((e) => {
-            sourceId = e.sourceId!;
-            return `${e.template}\x1f${e.model}`;
-        });
-        templates = templates.filter((t, i) => templates.indexOf(t) === i);
-        const templateIds = templates.map((t) => {
-            const [name, model] = t.split("\x1f");
-            return this.template.findOne({sourceId, name, model}).$loki;
-        });
-
-        const noteIds = entries.map((e) => {
-            const {entry, data} = e;
-            if (entry) {
-                return this.note.insertOne({
-                    sourceId: sourceId!,
-                    name: entry!,
-                    data: data!
-                }).$loki;
-            } else {
-                return undefined;
-            }
-        });
-
-        const now = new Date();
-        const cards: ICard[] = entries.map((e, i) => {
-            const {deck, nextReview, front, back, mnemonic, srsLevel, tag} = e;
+    public parseCond(
+        cond: Partial<ISearchParserResult>,
+        options: ICondOptions = {}
+    ): IPagedOutput<IEntry> {
+        cond.cond = cond.cond || {};
+        if (!options.fields && !cond.fields) {
             return {
-                front, back, mnemonic, srsLevel, tag,
-                nextReview: nextReview ? moment(nextReview).toDate() : undefined,
-                deckId: deckIds[decks.indexOf(deck)],
-                noteId: noteIds[i],
-                templateId: e.template && e.model ? templateIds[templates.indexOf(`${e.template}\x1f${e.model}`)] : undefined,
-                created: now
-            } as ICard;
-        });
-
-        let res = this.card.insert(cards);
-
-        if (!Array.isArray(res)) {
-            res = [res];
+                data: [],
+                count: 0
+            };
         }
 
-        return res.map((c) => c.$loki);
-    }
-
-    public update(id: number | number[], u: Partial<IInsertEntry>) {
-        const c = this.transformUpdate(u);
-        c.modified = new Date();
-        if (Array.isArray(id)) {
-            return this.card.updateWhere((c0) => id.indexOf(c0.$loki) !== -1, (c0) => {
-                return Object.assign(c0, c);
-            });
-        } else {
-            return this.card.updateWhere((c0) => c0.$loki === id, (c0) => {
-                return Object.assign(c0, c);
-            });
+        const allFields = new Set(options.fields || []);
+        for (const f of (cond.fields || [])) {
+            allFields.add(f);
         }
-    }
 
-    private transformUpdate(u: Partial<IInsertEntry>): Partial<ICard> {
-        const output: Partial<ICard> = {};
-
-        for (const k of Object.keys(u)) {
-            const v = (u as any)[k];
-
-            if (k === "deck") {
-                output.deckId = this.getOrCreateDeck(v);
-                delete (u as any)[k];
-            } else if (k === "nextReview") {
-                output.nextReview = moment(v).toDate();
-            } else if (interfaceKeys<ICard>().indexOf(k as any) !== -1) {
-                (output as any)[k] = v;
+        if (cond.is) {
+            if (cond.is.has("distinct") || cond.is.has("duplicate")) {
+                allFields.add("key");
+            }
+            
+            if (cond.is.has("random")) {
+                cond.sortBy = "random";
             }
         }
 
-        return output;
+        let q = this.card.chain();
+
+        if (["data", "key"].some((k) => allFields.has(k))) {
+            q = q.eqJoin(this.note, "noteId", "$loki", (l, r) => {
+                delete l.$loki;
+                delete l.meta;
+                const {key, data} = r;
+                return {...l, key, data};
+            });
+        }
+        
+        if (["deck"].some((k) => allFields.has(k))) {
+            q = q.eqJoin(this.deck, "deckId", "$loki", (l, r) => {
+                delete l.$loki;
+                delete l.meta;
+                const {name} = r;
+                return {...l, deck: name};
+            });
+        }
+        
+        if (["sCreated", "sH", "source"].some((k) => allFields.has(k))) {
+            q = q.eqJoin(this.source, "sourceId", "$loki", (l, r) => {
+                delete l.$loki;
+                delete l.meta;
+                const {created, h, name} = r;
+                return {...l, sCreated: created, sH: h, source: name};
+            });
+        }
+        
+        if (["tFront", "tBack", "template", "model", "css", "js"].some((k) => allFields.has(k))) {
+            q = q.eqJoin(this.template, "templateId", "$loki", (l, r) => {
+                delete l.$loki;
+                delete l.meta;
+                const {front, back, name, model, css, js} = r;
+                return {...l, tFront: front, tBack: back, template: name, model, css, js};
+            });
+        }
+
+        let cards = q.data().map((c) => {
+            (c as any).id = c.$loki;
+            return c;
+        }).filter(mongoFilter(cond.cond || {})) as IEntry[];
+
+        if (cond.is) {
+            if (cond.is.has("distinct")) {
+                shuffle(cards);
+                const allKeys = cards.map((c) => c.key);
+                cards = cards.filter((c, i) => !c.key || allKeys.indexOf(c.key) === i);
+            }
+
+            if (cond.is.has("duplicate")) {
+                const output = [] as any[];
+                let counter = {} as any;
+
+                for (const c of cards) {
+                    if (c.key) {
+                        counter[c.key] = counter[c.key] || [];
+                        counter[c.key].push(c);
+                    }
+                }
+
+                for (const k of Object.keys(counter)) {
+                    if (counter[k].length > 1) {
+                        output.push(...counter[k]);
+                    }
+                }
+
+                cards = output;
+            }
+        }
+
+        const sortBy = cond.sortBy || options.sortBy;
+        const desc = cond.desc || options.desc;
+
+        if (sortBy === "random") {
+            shuffle(cards);
+        } else {
+            cards = cards.sort(sorter(sortBy, desc));
+        };
+
+        let endPoint: number | undefined;
+        if (options.limit) {
+            endPoint = (options.offset || 0) + options.limit;
+        }
+
+        return {
+            data: cards.slice(options.offset || 0, endPoint).map((c) => {
+                if (options.fields) {
+                    for (const k of Object.keys(c)) {
+                        if (!options.fields.includes(k) && k !== "$loki") {
+                            delete (c as any)[k];
+                        }
+                    }
+                }
+    
+                return c;
+            }),
+            count: cards.length
+        };
+    }
+
+    public insertMany(entries: IEntry[]): number[] {
+        entries = entries.map((e) => this.transformCreateOrUpdate(null, e)) as IEntry[];
+
+        const eValidSource = entries.filter((e) => e.sH);
+        const now = new Date().toISOString();
+
+        let sourceH: string = "";
+        let sourceId: number;
+        for (const e of eValidSource.filter((e, i) => {
+            return eValidSource.map((e1) => e1.sH).indexOf(e.sH) === i
+        })) {
+            sourceH = e.sH!;
+            try {
+                this.source.insertOne({
+                    name: e.source!,
+                    created: e.sCreated || now,
+                    h: e.sH!
+                })
+            } catch (err) {}
+        }
+
+        if (sourceH) {
+            sourceId = this.source.findOne({h: sourceH})!.$loki!
+        }
+
+        const eValidTemplate = entries.filter((e) => e.tFront);
+        const tMap0: {[key: string]: number} = {};
+
+        let tList = this.template.insert(eValidTemplate.map((e, i) => {
+            tMap0[`${e.template}\x1f${e.model}`] = i;
+
+            return {
+                name: e.template!,
+                model: e.model,
+                front: e.tFront!,
+                back: e.tBack,
+                css: e.css,
+                js: e.js,
+                sourceId
+            }
+        }));
+
+        if (!Array.isArray(tList)) {
+            tList = [tList];
+        }
+
+        const eValidNote = entries.filter((e) => e.data);
+        const nMap0: {[key: string]: number} = {};
+
+        let nList = this.note.insert(eValidNote.map((e, i) => {
+            nMap0[e.key!] = i;
+
+            return {
+                key: e.key!,
+                data: e.data!,
+                sourceId
+            }
+        }))
+
+        if (!Array.isArray(nList)) {
+            nList = [nList];
+        }
+
+        const dMap: {[key: string]: number} = {};
+        const decks = entries.map((e) => e.deck);
+        const deckIds = decks.map((d) => this.getOrCreateDeck(d));
+        decks.forEach((d, i) => {
+            dMap[d] = deckIds[i];
+        });
+
+        let cList = this.card.insert(entries.map((e) => {
+            return {
+                front: e.front,
+                back: e.back,
+                mnemonic: e.mnemonic,
+                srsLevel: e.srsLevel,
+                nextReview: e.nextReview,
+                deckId: dMap[e.deck],
+                noteId: nList[nMap0[e.key!]].$loki,
+                templateId: tList[tMap0[`${e.template}\x1f${e.model}`]].$loki,
+                created: now,
+                tag: e.tag
+            }
+        }));
+
+        if (!Array.isArray(cList)) {
+            cList = [cList];
+        }
+        
+        return cList.map((c) => c.$loki);
+    }
+
+    public updateMany(ids: number[], u: Partial<IEntry>) {
+        const now = new Date().toISOString();
+
+        return this.card.updateWhere((c0) => ids.includes(c0.$loki), (c0) => {
+            return Object.assign(c0, this.transformCreateOrUpdate(c0.$loki, u, now));
+        });
+    }
+
+    public addTags(ids: number[], tags: string[]) {
+        const now = new Date().toISOString();
+
+        return this.card.updateWhere((c0) => ids.includes(c0.$loki), (c0) => {
+            c0.modified = now;
+            c0.tag = c0.tag || [];
+            for (const t of tags) {
+                if (!c0.tag.includes(t)) {
+                    c0.tag.push(t);
+                }
+            }
+            return c0;
+        });
+    }
+
+    public removeTags(ids: number[], tags: string[]) {
+        const now = new Date().toISOString();
+
+        return this.card.updateWhere((c0) => ids.includes(c0.$loki), (c0) => {
+            c0.modified = now;
+            const newTags: string[] = [];
+
+            for (const t of (c0.tag || [])) {
+                if (!tags.includes(t)) {
+                    newTags.push(t);
+                }
+            }
+            if (newTags.length > 0) {
+                c0.tag = newTags;
+            } else {
+                delete c0.tag;
+            }
+
+            return c0;
+        });
+    }
+
+    public deleteMany(ids: number[]) {
+        return this.card.removeWhere((c0) => ids.includes(c0.$loki));
+    }
+
+    public render(cardId: number) {
+        const r = this.parseCond({
+            cond: {id: cardId}
+        }, {
+            limit: 1,
+            fields: ["front", "back", "mnemonic", "tFront", "tBack", "data", "css", "js"]
+        });
+
+        const c = r.data[0];
+        const {tFront, tBack, data} = c;
+        
+        if (/@md5\n/.test(c.front)) {
+            c.front = ankiMustache(tFront || "", data);
+        }
+
+        if (c.back && /@md5\n/.test(c.back)) {
+            c.back = ankiMustache(tBack || "", data, c.front);
+        }
+
+        return c;
+    }
+
+    public markRight(cardId: number) {
+        return this.updateSrsLevel(+1, cardId);
+    }
+
+    public markWrong(cardId: number) {
+        return this.updateSrsLevel(-1, cardId);
+    }
+
+    private updateSrsLevel(dSrsLevel: number, cardId: number) {
+        const card = this.card.findOne({$loki: cardId});
+
+        if (!card) {
+            return;
+        }
+
+        card.srsLevel = card.srsLevel || 0;
+        card.stat = card.stat || {streak: {
+            right: 0,
+            wrong: 0
+        }};
+        card.stat.streak = card.stat.streak || {
+            right: 0,
+            wrong: 0
+        }
+
+        if (dSrsLevel > 0) {
+            card.stat.streak.right = (card.stat.streak.right || 0) + 1;
+        } else if (dSrsLevel < 0) {
+            card.stat.streak.wrong = (card.stat.streak.wrong || 0) + 1;
+        }
+
+        card.srsLevel += dSrsLevel;
+
+        if (card.srsLevel >= srsMap.length) {
+            card.srsLevel = srsMap.length - 1;
+        }
+
+        if (card.srsLevel < 0) {
+            card.srsLevel = 0;
+        }
+
+        if (dSrsLevel > 0) {
+            card.nextReview = getNextReview(card.srsLevel).toISOString();
+        } else {
+            card.nextReview = repeatReview().toISOString();
+        }
+
+        const {srsLevel, stat, nextReview} = card;
+        this.updateMany([cardId], {srsLevel, stat, nextReview});
+    }
+
+    private transformCreateOrUpdate(
+        cardId: number | null, 
+        u: Partial<IEntry>, 
+        timestamp: string = new Date().toISOString()
+    ): Partial<IEntry> {
+        let data: INoteDataSocket[] | undefined = undefined;
+        let front: string = "";
+
+        if (!cardId) {
+            u.created = timestamp;
+        } else {
+            u.modified = timestamp;
+        }
+
+        if (u.front && u.front.startsWith("@template\n")) {
+            if (!data) {
+                if (cardId) {
+                    data = this.getData(cardId);
+                } else {
+                    data = u.data || [];
+                }
+            }
+
+            u.tFront = u.front.substr("@template\n".length);
+        }
+
+        if (u.tFront) {
+            front = ankiMustache(u.tFront, data);
+            u.front = "@md5\n" + SparkMD5.hash(front);
+        }
+
+        if (u.back && u.back.startsWith("@template\n")) {
+            if (!data) {
+                if (cardId) {
+                    data = this.getData(cardId);
+                } else {
+                    data = u.data || [];
+                }
+            }
+
+            u.tBack = (u.front || "").substr("@template\n".length);
+            if (!front && cardId) {
+                front = this.getFront(cardId);
+            }
+        }
+
+        if (u.tBack) {
+            const back = ankiMustache(u.tBack, data, front);
+            u.back = "@md5\n" + SparkMD5.hash(back);
+        }
+
+        return u;
     }
 
     private getOrCreateDeck(name: string): number {
@@ -278,6 +572,35 @@ export class Db {
             return this.deck.findOne({name}).$loki;
         }
     }
+
+    private getData(cardId: number): INoteDataSocket[] | undefined {
+        const c = this.card.findOne({$loki: cardId});
+        if (c && c.noteId) {
+            const n = this.note.findOne({$loki: c.noteId});
+            if (n) {
+                return n.data;
+            }
+        }
+
+        return;
+    }
+
+    private getFront(cardId: number): string {
+        const c = this.card.findOne({$loki: cardId});
+        if (c) {
+            if (c.front.startsWith("@md5\n") && c.templateId) {
+                const t = this.template.findOne({$loki: c.templateId});
+                const data = this.getData(cardId);
+                if (t) {
+                    return ankiMustache(t.front, data);
+                }
+            }
+
+            return c.front;
+        }
+
+        return "";
+    }
 }
 
 export default Db;
@@ -285,6 +608,8 @@ export default Db;
 interface IJoinCollection<T> {
     data: T[];
     key: keyof T;
+    includes?: Array<keyof T>;
+    excludes?: Array<keyof T>;
 }
 
 function fullJoin<T, U>(
@@ -300,6 +625,20 @@ function fullJoin<T, U>(
     for (const rowR of colR.data) {
         const v = rowR[colR.key];
 
+        if (colR.includes) {
+            for (const k of Object.keys(rowR)) {
+                if (!colR.includes.includes(k as any) && k !== colR.key) {
+                    delete (rowR as any)[k];
+                }
+            }
+        } else if (colR.excludes) {
+            for (const k of Object.keys(rowR)) {
+                if (colR.excludes.includes(k as any) && k !== colR.key) {
+                    delete (rowR as any)[k];
+                }
+            }
+        }
+
         if (v) {
             joinMapR[v] = joinMapR[v] || [];
             joinMapR[v].push(rowR);
@@ -310,6 +649,20 @@ function fullJoin<T, U>(
 
     for (const rowL of colL.data) {
         const v = rowL[colL.key];
+
+        if (colL.includes) {
+            for (const k of Object.keys(rowL)) {
+                if (!colL.includes.includes(k as any) && k !== colL.key) {
+                    delete (rowL as any)[k];
+                }
+            }
+        } else if (colL.excludes) {
+            for (const k of Object.keys(rowL)) {
+                if (colL.excludes.includes(k as any) && k !== colL.key) {
+                    delete (rowL as any)[k];
+                }
+            }
+        }
 
         if (v) {
             for (const vR of joinMapR[v] || [{}]) {
@@ -330,6 +683,20 @@ function fullJoin<T, U>(
             const v = rowR[colR.key];
 
             if (v) {
+                if (colR.includes) {
+                    for (const k of Object.keys(rowR)) {
+                        if (!colR.includes.includes(k as any) && k !== colR.key) {
+                            delete (rowR as any)[k];
+                        }
+                    }
+                } else if (colR.excludes) {
+                    for (const k of Object.keys(rowR)) {
+                        if (colR.excludes.includes(k as any) && k !== colR.key) {
+                            delete (rowR as any)[k];
+                        }
+                    }
+                }
+
                 for (const vL of joinMapL[v] || [{}]) {
                     result.push(mapFn(vL, rowR));
                 }

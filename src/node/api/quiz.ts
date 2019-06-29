@@ -1,9 +1,8 @@
-import Config from "../config";
-import { SearchParser, mongoToFilter } from "../engine/search";
+import { SearchParser } from "../engine/search";
 import moment from "moment";
-import { simpleMustacheRender } from "../util";
-import { srsMap, getNextReview, repeatReview } from "../engine/quiz";
 import { Router } from "express";
+import g from "../config";
+import { pp } from "../util";
 
 interface ITreeViewStat {
     new: number;
@@ -22,9 +21,14 @@ export interface ITreeViewItem {
 const router = Router();
 
 router.post("/", (req, res) => {
-    const db = Config.DB!;
+    const db = g.DB!;
     const parser = new SearchParser();
-    const andCond = [parser.parse(req.body.q)];
+    const andCond = [];
+
+    const parseResult = parser.doParse(req.body.q);
+    if (parseResult) {
+        andCond.push(parseResult.cond);
+    }
 
     if (req.body.deck) {
         andCond.push({$or: [
@@ -66,22 +70,17 @@ router.post("/", (req, res) => {
         }
     }
 
-    const ids = db.getAll().filter(mongoToFilter({$and: andCond})).map((c) => c.id)
-    return res.json({ids});
+    return res.json({ids: db.parseCond({
+        cond: {$and: andCond},
+        fields: new Set(["deck"])
+    }, {
+        fields: ["id"]
+    }).data.map((c) => c.id)});
 });
 
 router.post("/render", (req, res) => {
-    const db = Config.DB!;
-    const c = db.card.findOne({$loki: req.body.id});
-
-    if (/@md5\n/.test(c.front)) {
-        const t = db.template.findOne({$loki: c.templateId});
-        const n = db.note.findOne({$loki: c.noteId});
-        c.front = simpleMustacheRender(t.front, n.data);
-        c.back = simpleMustacheRender(t.back || "", n.data);
-    }
-
-    return res.json(c);
+    const db = g.DB!;
+    return res.json(db.render(req.body.id));
 });
 
 router.post("/treeview", (req, res) => {
@@ -122,12 +121,15 @@ router.post("/treeview", (req, res) => {
         }
     }
 
-    const db = Config.DB!;
+    const db = g.DB!;
 
     const rSearch = new SearchParser();
-    const cond = rSearch.parse(req.body.q);
+    const cond = rSearch.doParse(req.body.q);
 
-    const deckData = db.getAll().filter(mongoToFilter(cond));
+    const deckData = db.parseCond(cond || {}, {
+        fields: ["nextReview", "srsLevel", "deck"]
+    }).data;
+
     const now = new Date();
 
     const deckList: string[] = deckData.map((d: any) => d.deck);
@@ -153,37 +155,13 @@ router.post("/treeview", (req, res) => {
 });
 
 router.put("/right", (req, res) => {
-    const db = Config.DB!;
-    const id: number = req.body.id;
-
-    db.card.updateWhere((c) => c.$loki === id, (c) => {
-        c.srsLevel = (c.srsLevel || 0) + 1;
-        if (c.srsLevel >= srsMap.length) {
-            c.srsLevel = srsMap.length - 1;
-        }
-        c.nextReview = getNextReview(c.srsLevel);
-
-        return c;
-    });
-
-    return res.json({ error: null });
+    const db = g.DB!;
+    return res.json(db.markRight(req.params.id));
 });
 
 router.put("/wrong", (req, res) => {
-    const db = Config.DB!;
-    const id: number = req.body.id;
-
-    db.card.updateWhere((c) => c.$loki === id, (c) => {
-        c.srsLevel = (c.srsLevel || 0) - 1;
-        if (c.srsLevel < 0) {
-            c.srsLevel = 0;
-        }
-        c.nextReview = repeatReview();
-
-        return c;
-    });
-
-    return res.json({ error: null });
+    const db = g.DB!;
+    return res.json(db.markWrong(req.params.id));
 });
 
 export default router;

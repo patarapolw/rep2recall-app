@@ -13,16 +13,20 @@
     "@lokidb/loki": "^2.0.0-beta.8",
     "@types/adm-zip": "^0.4.32",
     "@types/cors": "^2.8.5",
+    "@types/dotenv": "^6.1.1",
     "@types/express": "^4.16.1",
     "@types/express-fileupload": "^1.1.0",
     "@types/express-ws": "^3.0.0",
     "@types/express-ws-routes": "^1.1.0",
-    "@types/parsimmon": "^1.10.0",
     "@types/rimraf": "^2.0.2",
-    "@types/sql.js": "^0.0.29",
+    "@types/sanitize-filename": "^1.1.28",
+    "@types/socket.io": "^2.1.2",
+    "@types/socket.io-client": "^1.4.32",
+    "@types/spark-md5": "^3.0.1",
+    "@types/sql.js": "^1.0.1",
+    "@types/toastr": "^2.1.37",
     "@types/turndown": "^5.0.0",
     "@types/uuid": "^3.4.4",
-    "@types/xregexp": "^3.0.30",
     "adm-zip": "^0.4.13",
     "appdirs": "^1.1.0",
     "body-parser": "^1.18.3",
@@ -30,13 +34,15 @@
     "express": "^4.17.1",
     "express-async-handler": "^1.1.4",
     "express-fileupload": "^1.1.4",
-    "express-ws": "^4.0.0",
     "moment": "^2.24.0",
-    "parsimmon": "^1.12.0",
     "rimraf": "^2.6.3",
-    "sql.js": "^0.5.0",
+    "sanitize-filename": "^1.6.1",
+    "socket.io": "^2.2.0",
+    "spark-md5": "^3.0.0",
+    "sql.js": "^1.0.0",
+    "toastr": "^2.1.4",
     "turndown": "^5.0.3",
-    "xregexp": "^4.2.4"
+    "vue-codemirror": "^4.0.6"
   },
   "devDependencies": {
     "@fortawesome/fontawesome-free": "^5.8.2",
@@ -48,7 +54,6 @@
     "bootstrap-vue": "^2.0.0-rc.18",
     "codemirror": "^5.47.0",
     "concurrently": "^4.1.0",
-    "copy-webpack-plugin": "^5.0.3",
     "css-loader": "^2.1.1",
     "electron": "^4.0.8",
     "electron-builder": "^20.38.5",
@@ -59,8 +64,8 @@
     "hyperscript": "^2.0.2",
     "jquery": "^3.4.0",
     "jquery-contextmenu": "^2.8.0",
+    "mime-types": "^2.1.24",
     "node-sass": "^4.11.0",
-    "nodemon": "^1.18.11",
     "popper.js": "^1.15.0",
     "raw-loader": "^2.0.0",
     "sass-loader": "^7.1.0",
@@ -69,6 +74,7 @@
     "sweetalert": "^2.1.2",
     "ts-loader": "^5.3.3",
     "ts-node": "^8.1.0",
+    "ts-node-dev": "^1.0.0-pre.40",
     "typescript": "3.3.4000",
     "uuid": "^3.3.2",
     "vue": "^2.6.10",
@@ -83,13 +89,11 @@
   "scripts": {
     "start": "yarn run dev",
     "dev": "concurrently 'yarn run js:dev' 'yarn run node:dev'",
-    "js:dev": "webpack-dev-server --config webpack.dev.js",
-    "node:dev": "rimraf build && concurrently 'yarn run tsc:watch' 'wait-on build/server.js && nodemon -r esm build/server.js'",
-    "build": "rimraf dist build && webpack --config webpack.prod.js",
+    "js:dev": "rimraf public/js && webpack-dev-server --config webpack.dev.js",
+    "node:dev": "ts-node-dev -r esm src/node/server.ts",
+    "build": "rimraf public/js && webpack --config webpack.prod.js",
     "electron:start": "electron .",
-    "electron:build": "rimraf release && yarn run build && electron-builder",
-    "tsc": "cd src/node && tsc",
-    "tsc:watch": "cd src/node && tsc -w"
+    "electron:build": "rimraf release && yarn run build && electron-builder"
   },
   "build": {
     "appId": "io.github.patarapolw.rep2recall",
@@ -103,6 +107,10 @@
     "fileAssociations": [
       {
         "ext": "r2r",
+        "role": "Editor"
+      },
+      {
+        "ext": "apkg",
         "role": "Editor"
       }
     ],

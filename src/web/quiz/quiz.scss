@@ -62,3 +62,36 @@
         }
     }
 }
+
+.button-quiz {
+    min-width: 70px;
+}
+
+small.button-label {
+    top: 30px;
+    left: 50px;
+    position: relative;
+}
+
+.small-spinner {
+    margin: 0 auto;
+    height: 100px;
+    width: 100px;
+    display: block;
+}
+
+#quiz-modal {
+    .modal-body {
+        height: 600px;
+    }
+
+    .counter {
+        position: absolute;
+        right: 1em;
+        bottom: 1em;
+        padding-left: 0.5em;
+        padding-right: 0.5em;
+        background-color: white;
+        border-radius: 0.2em;
+    }
+}

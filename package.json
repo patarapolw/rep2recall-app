@@ -1,6 +1,6 @@
 {
-  "name": "rep2recall",
-  "version": "0.3.0",
+  "name": "rep2recall-app",
+  "version": "0.4.0",
   "main": "dist/electron.min.js",
   "description": "Repeat until you can recall",
   "author": {

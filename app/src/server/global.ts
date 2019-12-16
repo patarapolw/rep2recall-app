@@ -14,7 +14,7 @@ fs.ensureDirSync(MEDIA_FOLDER);
 fs.ensureDirSync(UPLOAD_FOLDER);
 
 interface IConfig {
-  DB?: Db;
+  DB: Db;
   IO?: SocketIO.Server;
   PORT: string;
   COLLECTION: string;
@@ -26,7 +26,8 @@ export const g: IConfig = {
   PORT,
   COLLECTION,
   MEDIA_FOLDER,
-  UPLOAD_FOLDER
+  UPLOAD_FOLDER,
+  DB: new Db(COLLECTION)
 };
 
 function onExit() {

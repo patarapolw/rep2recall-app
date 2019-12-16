@@ -24,6 +24,6 @@ app.use("/api/media", mediaRouter);
 app.use("/api/quiz", quizRouter);
 
 (async () => {
-    g.DB = await Db.connect(g.COLLECTION);
+    await g.DB.init();
     server.listen(g.PORT, () => console.log(`Server running on http://localhost:${g.PORT}`));
 })().catch((e) => console.error(e));

@@ -10,7 +10,14 @@ import { fork } from 'child_process'
 import path from 'path'
 
 contextMenu()
-const serverProcess = fork(path.join(__dirname, "server/index.js"));
+
+process.env.PORT = process.env.PORT || "48000";
+process.env.COLLECTION = process.env.COLLECTION || path.join(app.getPath("userData"), "user.db");
+console.log(`Saving at ${process.env.COLLECTION}`);
+
+const serverProcess = fork(path.join(__dirname, "server/index.js"), [], {
+  stdio: "inherit"
+});
 
 const isDevelopment = process.env.NODE_ENV !== 'production'
 

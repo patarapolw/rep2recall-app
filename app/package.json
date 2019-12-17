@@ -10,11 +10,12 @@
   },
   "repository": "github:patarapolw/rep2recall-app",
   "scripts": {
-    "start": "open ./dist_electron/mac/$npm_package_name.app",
+    "start": "node start.js",
     "base": "penv base && yarn link liteorm",
     "clean": "rimraf .package.json && yarn link liteorm",
     "dev": "vue-cli-service electron:serve",
-    "build": "vue-cli-service electron:build --mac --win",
+    "build": "vue-cli-service electron:build",
+    "build:server": "tsc -p tsconfig.server.json",
     "release": "penv production && yarn && vue-cli-service electron:build --mac --win",
     "electron:version": "electron --version"
   },
@@ -27,6 +28,7 @@
     "express": "^4.17.1",
     "express-fileupload": "^1.1.6",
     "fs-extra": "^8.1.0",
+    "liteorm": "https://github.com/patarapolw/liteorm.git#strarray",
     "moment": "^2.24.0",
     "rimraf": "^3.0.0",
     "runtypes": "^4.0.3",
@@ -34,8 +36,7 @@
     "socket.io": "^2.3.0",
     "spark-md5": "^3.0.0",
     "sqlite": "^3.0.3",
-    "uuid": "^3.3.3",
-    "liteorm": "https://github.com/patarapolw/liteorm.git#strarray"
+    "uuid": "^3.3.3"
   },
   "devDependencies": {
     "@fortawesome/fontawesome-svg-core": "^1.2.26",
@@ -75,6 +76,7 @@
     "jquery": "^3.4.1",
     "jquery-contextmenu": "^2.9.0",
     "lodash.merge": "^4.6.2",
+    "open": "^7.0.0",
     "penv": "^0.2.0",
     "sass": "^1.23.7",
     "sass-loader": "^8.0.0",

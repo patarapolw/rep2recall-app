@@ -8,11 +8,12 @@ module.exports = {
     plugins: [
       {
         apply: (compiler) => {
-          compiler.hooks.compile.tap('TscPlugin', () => {
-            spawnSync("./node_modules/.bin/tsc", [
-              "-p",
-              "./tsconfig.server.json"
-            ])
+          compiler.hooks.entryOption.tap('TscPlugin', () => {
+            spawnSync("yarn", [
+              "build:server"
+            ], {
+              stdio: "inherit"
+            })
           });
         }
       }

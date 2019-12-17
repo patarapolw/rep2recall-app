@@ -9,17 +9,19 @@ import contextMenu from 'electron-context-menu'
 import { fork } from 'child_process'
 import path from 'path'
 
+const isDevelopment = process.env.NODE_ENV !== 'production'
+
 contextMenu()
 
 process.env.PORT = process.env.PORT || "48000";
 process.env.COLLECTION = process.env.COLLECTION || path.join(app.getPath("userData"), "user.db");
 console.log(`Saving at ${process.env.COLLECTION}`);
 
-const serverProcess = fork(path.join(__dirname, "server/index.js"), [], {
+const serverProcess = fork(isDevelopment
+  ? path.join(__dirname, "../public/server/index.js")
+  : path.join(__dirname, "server/index.js"), [], {
   stdio: "inherit"
 });
-
-const isDevelopment = process.env.NODE_ENV !== 'production'
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.

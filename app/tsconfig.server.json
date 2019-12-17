@@ -8,7 +8,7 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
-    "outDir": "./dist_electron/server",
+    "outDir": "./public/server",
     "rootDir": "./src/server",
     "declaration": false,
     "declarationMap": false,

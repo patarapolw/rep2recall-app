@@ -1,10 +1,11 @@
 import showdown from "showdown";
+import $ from "jquery";
 
 const anchorAttributes = {
   type: 'output',
   regex: /()\((.+=".+" ?)+\)/g,
   replace: (match: any, $1: string, $2: string) => {
-      return $1.replace('">', `" ${$2}>`);
+    return $1.replace('">', `" ${$2}>`);
   }
 };
 
@@ -26,7 +27,7 @@ export function md2html(s: string, d: any): string {
 
 export function fixHtml(s: string): string {
   for (const fix of [furiganaParser]) {
-      s = s.replace(fix.regex, fix.replace)
+    s = s.replace(fix.regex, fix.replace)
   };
   return s;
 }
@@ -119,4 +120,29 @@ export function normalizeArray<T>(arr: T | T[]): T | undefined {
   }
 
   return arr;
+}
+
+export function shuffle<T>(a: T[]): T[] {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+export function slowClick($selector: JQuery) {
+  const duration = 200;
+  $selector.prop("disabled", true);
+
+  $selector.addClass("animated");
+  $selector.css({
+    "animation-duration": `${duration}ms`
+  });
+  setTimeout(() => {
+    $selector.prop("disabled", false);
+    $selector.click();
+    $selector.removeClass("animated");
+  }, duration);
+
+  return $selector;
 }

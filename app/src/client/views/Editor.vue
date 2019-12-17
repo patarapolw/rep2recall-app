@@ -48,8 +48,8 @@
               p(v-for="b in a[1]" :key="b" v-html="toHtmlAndBreak(b)")
             .wrapped(v-else v-html="toHtmlAndBreak(a[1])")
         td
-  entry-editor#new-entry-modal(title="Create new entry" @ok="onEntrySaved")
-  entry-editor#edit-entry-modal(title="Edit entry" @ok="onEntrySaved" :entry-id="Array.from(checkedIds)[0]")
+  entry-editor(id="new-entry-modal" title="Create new entry" @ok="onEntrySaved")
+  entry-editor(id="edit-entry-modal" title="Edit entry" @ok="onEntrySaved" :entry-id="Array.from(checkedIds)[0]")
   b-modal#rename-deck(title="What do you want to rename the deck to?" @show="newDeckName = ''" @ok="onDeckRenamed")
     input(v-model="newDeckName")
   b-modal#edit-tags(@show="newTagName = ''" @ok="onNewTags")

@@ -1,0 +1,7 @@
+{
+  "production": {
+    "dependencies": {
+      "liteorm": "https://github.com/patarapolw/liteorm.git#strarray"
+    }
+  }
+}

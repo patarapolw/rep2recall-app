@@ -46,6 +46,7 @@
     "fs-extra": "^8.1.0",
     "hyperscript": "^2.0.2",
     "jquery-contextmenu": "^2.9.0",
+    "liteorm": "https://github.com/patarapolw/liteorm.git#strarray",
     "lodash.merge": "^4.6.2",
     "moment": "^2.24.0",
     "rimraf": "^3.0.0",

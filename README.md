@@ -8,10 +8,10 @@ Download: <https://github.com/patarapolw/rep2recall/releases>
 
 ## Development mode
 
-You can run in development mode with `yarn install` and `yarn start`
+You can run in development mode with
 
 ```
-PORT=34972
-DEV_SERVER_PORT=8000
-COLLECTION=user.r2r
+cd app
+yarn
+yarn dev
 ```

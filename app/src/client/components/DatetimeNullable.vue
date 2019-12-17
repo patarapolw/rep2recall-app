@@ -54,3 +54,15 @@ export default class DatetimeNullable extends Vue {
   }
 }
 </script>
+
+<style lang="scss">
+.datetime-nullable {
+  &.input-group {
+    padding: 0;
+  }
+
+  > input {
+    background-color: white !important;
+  }
+}
+</style>

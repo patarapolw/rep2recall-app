@@ -82,7 +82,7 @@ export function ankiMustache(s: string, d: {
   front?: string;
   data?: Record<string, any>;
 }): string {
-  s = s.replace(/{{FrontSide}}/g, (d.front || "").replace(/@[^\n]+\n/g, ""));
+  s = s.replace(/\{\{FrontSide}}/g, (d.front || "").replace(/@[^\n]+\n/g, ""));
 
   const data = d.data || {};
   if (!(data && data.constructor === Object)) {
@@ -91,13 +91,13 @@ export function ankiMustache(s: string, d: {
 
   for (const [k, v] of Object.entries(data)) {
     if (typeof v === "string") {
-      s = s.replace(new RegExp(`{{(\\S+:)?${escapeRegExp(k)}}}`), v);
+      s = s.replace(new RegExp(`\\{\\{(\\S+:)?${escapeRegExp(k)}}}`), v);
     }
   }
 
   const keys = Object.keys(data);
 
-  s = s.replace(/{{#(\S+)}}(.*){{\1}}/gs, (m, p1, p2) => {
+  s = s.replace(/\{\{#(\S+)}}(.*)\{\{\1}}/gs, (m, p1, p2) => {
     if (keys.includes(p1)) {
       return p2;
     } else {
@@ -105,7 +105,7 @@ export function ankiMustache(s: string, d: {
     }
   });
 
-  s = s.replace(/{{[^}]+}}/g, "");
+  s = s.replace(/\{\{[^}]+}}/g, "");
 
   return s;
 }

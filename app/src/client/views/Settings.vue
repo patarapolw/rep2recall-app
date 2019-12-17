@@ -3,7 +3,7 @@
   h3 Media file location
   p
     | Media files are accessible at&nbsp;
-    a(href="#" @click="openMediaFolder")
+    b-link(@click="openMediaFolder") {{mediaFolder}}
     | &nbsp;as&nbsp;
     code /media/filename.ext
   h3.mt-3.danger Reset user database
@@ -45,3 +45,9 @@ export default class Settings extends Vue {
   }
 }
 </script>
+
+<style lang="scss">
+.danger {
+  color: red;
+}
+</style>

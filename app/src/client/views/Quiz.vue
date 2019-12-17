@@ -40,22 +40,24 @@ import { Vue, Component, Watch } from "vue-property-decorator";
 import { quizDataToContent, shuffle, slowClick } from "../utils";
 import { ax } from "../global";
 import TreeviewItem, { ITreeViewItem } from "../components/TreeviewItem.vue";
+import EntryEditor from "../components/EntryEditor.vue";
 import $ from "jquery";
 import h from "hyperscript";
 
 @Component({
   components: {
-    TreeviewItem
+    TreeviewItem,
+    EntryEditor
   }
 })
 export default class Quiz extends Vue {
   isLoading = true;
-  private data: ITreeViewItem[] = [];
-  private q = "";
+  data: ITreeViewItem[] = [];
+  q = "";
 
-  private quizIds: number[] = [];
-  private currentQuizIndex: number = -1;
-  private quizContentPrefix =
+  quizIds: number[] = [];
+  currentQuizIndex: number = -1;
+  quizContentPrefix =
     `
     <` +
     `script>
@@ -65,25 +67,25 @@ export default class Quiz extends Vue {
     });
     <` +
     `/script>`;
-  private quizContent = "";
-  private quizShownAnswer = false;
-  private quizData: any = {};
-  private selectedDeck = "";
+  quizContent = "";
+  quizShownAnswer = false;
+  quizData: any = {};
+  selectedDeck = "";
 
-  public mounted() {
+  mounted() {
     this.getTreeViewData();
     $(document.body).on("keydown", "#quiz-modal", this.keyboardHandler);
   }
 
-  public update() {
+  update() {
     this.getTreeViewData();
   }
 
-  public destroyed() {
+  destroyed() {
     $(document.body).off("keydown", "#quiz-modal", this.keyboardHandler);
   }
 
-  private keyboardHandler(evt: JQuery.KeyDownEvent) {
+  keyboardHandler(evt: JQuery.KeyDownEvent) {
     const keyControl = {
       toggle() {
         const $toggle = $(".quiz-toggle");
@@ -130,23 +132,23 @@ export default class Quiz extends Vue {
     }
   }
 
-  private onInputKeypress(evt: any) {
+  onInputKeypress(evt: any) {
     if (evt.key === "Enter") {
       this.getTreeViewData();
     }
   }
 
-  private onQuizShown() {
+  onQuizShown() {
     this.currentQuizIndex = -1;
     this.quizIds = [];
     this.quizShownAnswer = false;
     this.quizContent = "";
   }
 
-  private async onReview(deck: string, type?: string) {
+  async onReview(deck: string, type?: string) {
     this.$bvModal.show("quiz-modal");
 
-    const { ids } = (await ax.post("/api/quiz/", {data: { deck, q: this.q, type }})).data;
+    const { ids } = (await ax.post("/api/quiz/", { deck, q: this.q, type })).data;
 
     this.quizIds = shuffle(ids);
     this.quizContent = h(
@@ -155,8 +157,8 @@ export default class Quiz extends Vue {
     ).outerHTML;
     if (ids.length === 0) {
       const [nextHour, nextDay] = await Promise.all([
-        ax.post("/api/quiz/", {data: { deck, q: this.q, type, due: "1h" }}),
-        ax.post("/api/quiz/", {data: { deck, q: this.q, type, due: "1d" }})
+        ax.post("/api/quiz/", { deck, q: this.q, type, due: "1h" }),
+        ax.post("/api/quiz/", { deck, q: this.q, type, due: "1d" })
       ]);
 
       this.quizContent += h("div", [
@@ -170,11 +172,11 @@ export default class Quiz extends Vue {
     const r = await this.$bvModal.msgBoxConfirm(`Are you sure you want to delete ${deck}?`);
 
     if (r) {
-      const { ids } = (await ax.post("/api/quiz/", {data: {
+      const { ids } = (await ax.post("/api/quiz/", {
         deck,
         q: this.q,
         type: "all"
-      }})).data;
+      })).data;
       await ax.delete("/api/editor/", {data: { ids }});
       await this.$bvModal.msgBoxOk(`Deleted ${deck}`);
       this.$forceUpdate();

@@ -277,9 +277,9 @@ export default class Db {
     }
 
     const data = await this.card.chain(dotProp.get(options, "fields.card"))
-      .join(this.template, "_id", "templateId", dotProp.get(options, "fields.template"))
-      .join(this.note, "_id", "noteId", dotProp.get(options, "fields.note"))
-      .join(this.source, "_id", "note.sourceId", dotProp.get(options, "fields.source"))
+      .join(this.template, "templateId", "_id", dotProp.get(options, "fields.template"))
+      .join(this.note, "noteId", "_id", dotProp.get(options, "fields.note"))
+      .join(this.source, "note.sourceId", "_id", dotProp.get(options, "fields.source"))
       .data(joinCond, postfix);
 
     return data.map((d) => {

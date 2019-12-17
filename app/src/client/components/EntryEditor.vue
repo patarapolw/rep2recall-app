@@ -79,7 +79,7 @@ b-modal(:id="id" :title="title" size="lg" @show="onModalShown" @ok="onModalOk")
 import { Vue, Component, Prop, Emit } from "vue-property-decorator";
 import DatetimeNullable from "./DatetimeNullable.vue";
 import TagEditor from "./TagEditor.vue";
-import MarkdownEditor from "./MarkDownEditor.vue";
+import MarkdownEditor from "./MarkdownEditor.vue";
 import dotProp from "dot-prop";
 import deepMerge from "lodash.merge";
 import { ax, Columns } from "../global";
@@ -165,11 +165,7 @@ export default class EntryEditor extends Vue {
     if (this.entryId) {
       this.isLoading = true;
 
-      const data = (await ax.post("/api/editor/", {
-        data: {
-          cond: { id: this.entryId }
-        }
-      })).data;
+      const data = (await ax.post("/api/editor/", {cond: { id: this.entryId }})).data;
       Vue.set(this, "data", fixData(data.data[0]));
     }
 
@@ -190,12 +186,12 @@ export default class EntryEditor extends Vue {
 
     if (Object.keys(this.update).length > 0) {
       if (this.entryId) {
-        const r = await ax.put("/api/editor/", {data: { id: this.entryId, update: this.update }});
+        const r = await ax.put("/api/editor/", { id: this.entryId, update: this.update });
         if (r.status === 201) {
           this.$bvModal.msgBoxOk("Updated");
         }
       } else {
-        const r = await ax.put("/api/editor/", {data: { create: this.update }});
+        const r = await ax.put("/api/editor/", { create: this.update });
         if (r.status === 201) {
           this.$bvModal.msgBoxOk("Created");
         }

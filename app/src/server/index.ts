@@ -3,7 +3,6 @@ import { g } from "./global";
 import editorRouter from "./api/editor";
 import mediaRouter from "./api/media";
 import quizRouter from "./api/quiz";
-import Db from "./engine/db";
 import cors from "cors";
 import bodyParser from "body-parser";
 import SocketIO from "socket.io";

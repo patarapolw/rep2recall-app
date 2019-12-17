@@ -11,7 +11,7 @@
       b-button.editor-button(variant="outline-success" v-b-modal.new-entry-modal) New card
       span(v-if="checkedIds.size > 0")
         b-button.editor-button(variant="outline-primary" v-b-modal.edit-entry-modal) Edit
-        b-dropdown.mr-3(variant="outline-secondary" split v-model.rename-deck text="Change Deck")
+        b-dropdown.mr-3(variant="outline-secondary" split v-b-modal.rename-deck text="Change Deck")
           b-dropdown-item(@click="editTags(true)") Add tags
           b-dropdown-item(@click="editTags(false)") Remove tags
         b-button.editor-button(variant="outline-danger" @click="deleteCards") Delete cards
@@ -31,7 +31,7 @@
             fontawesome(:icon="['fas', 'check-double']" v-if="allCardsSelected"
             @click="allCardsSelected = false; checkedIds.clear()")
         th(v-for="c in tableCols" :key="c.name" scope="col")
-          a(href="#" @click="onTableHeaderClicked(c.name)") {{ c.label }}
+          b-link(@click="onTableHeaderClicked(c.name)") {{ c.label }}
           span(v-if="sortBy === c.name") {{ desc ? ' ▲' : ' ▼'}}
         th
     tbody
@@ -200,10 +200,8 @@ export default class Editor extends Vue {
     if (this.newDeckName) {
       this.isLoading = true;
       await ax.put("/api/editor/", {
-        data: {
-          ids: Array.from(this.checkedIds),
-          update: { deck: this.newDeckName }
-        }
+        ids: Array.from(this.checkedIds),
+        update: { deck: this.newDeckName }
       });
 
       this.fetchData();
@@ -220,10 +218,8 @@ export default class Editor extends Vue {
 
     if (this.isAddTags) {
       await ax.put(`/api/editor/addTags`, {
-        data: {
-          ids: Array.from(this.checkedIds),
-          tags: this.newTagName.split(" ")
-        }
+        ids: Array.from(this.checkedIds),
+        tags: this.newTagName.split(" ")
       });
     } else {
       await ax.delete(`/api/editor/removeTags`, {
@@ -237,13 +233,13 @@ export default class Editor extends Vue {
     this.fetchData();
   }
 
-  private onSearchbarKeypress(evt: any) {
+  onSearchbarKeypress(evt: any) {
     if (evt.key === "Enter") {
       this.fetchData();
     }
   }
 
-  private onCheckboxClicked(evt: any, id?: number) {
+  onCheckboxClicked(evt: any, id?: number) {
     const checkboxMain = this.$refs["checkbox.main"] as HTMLInputElement;
 
     if (id) {
@@ -276,17 +272,15 @@ export default class Editor extends Vue {
   async onAllCardsSelected() {
     this.isLoading = true;
     const { ids } = (await ax.post("/api/quiz/", {
-      data: {
-        q: this.q,
-        type: "all"
-      }
+      q: this.q,
+      type: "all"
     })).data;
     this.checkedIds = new Set(ids);
     this.allCardsSelected = true;
     this.isLoading = false;
   }
 
-  private onTableHeaderClicked(name: string) {
+  onTableHeaderClicked(name: string) {
     if (this.sortBy === name) {
       this.desc = !this.desc;
     } else {
@@ -295,7 +289,7 @@ export default class Editor extends Vue {
     }
   }
 
-  private onTableRowClicked(id: number) {
+  onTableRowClicked(id: number) {
     const availableIds = new Set(this.data.map(row => row.id));
 
     this.checkedIds.forEach(c => {
@@ -314,18 +308,18 @@ export default class Editor extends Vue {
     this.$forceUpdate();
   }
 
-  private getHtml(data: any, side: "front" | "back" | "note"): string {
+  getHtml(data: any, side: "front" | "back" | "note"): string {
     return quizDataToContent(data, side);
   }
 
-  private calculateCheckboxMainStatus() {
+  calculateCheckboxMainStatus() {
     const checkboxMain = this.$refs["checkbox.main"] as HTMLInputElement;
     this.allCardsSelected = false;
     checkboxMain.indeterminate =
       this.checkedIds.size > 0 && this.checkedIds.size < this.data.length;
   }
 
-  private reset(clearSearchParams: boolean = true) {
+  reset(clearSearchParams: boolean = true) {
     if (clearSearchParams) {
       this.q = "";
       this.offset = 0;
@@ -350,13 +344,11 @@ export default class Editor extends Vue {
     this.isLoading = true;
 
     const r = (await ax.post("/api/editor/", {
-      data: {
-        q: this.q,
-        offset: this.offset,
-        limit: this.limit,
-        sortBy: this.sortBy,
-        desc: this.desc
-      }
+      q: this.q,
+      offset: this.offset,
+      limit: this.limit,
+      sortBy: this.sortBy,
+      desc: this.desc
     })).data;
 
     this.data = r.data.map((d: any) => fixData(d));

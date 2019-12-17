@@ -9,15 +9,27 @@ router.post("/", async (req, res, next) => {
     const { q, offset, limit } = req.body;
     const db = g.DB!;
 
-    return res.json(await db.parseCond(String.check(q) || {}, {
-      offset, limit,
-      fields: {
-        card: ["front", "back", "mnemonic", "tag", "srsLevel", "nextReview", "createdAt", "updatedAt", "stat", "deck"],
-        template: ["name", "front", "back"],
-        note: ["meta", "data"],
-        source: ["name"]
-      }
-    }));
+    const [data, ids] = await Promise.all([
+      db.parseCond(String.check(q) || {}, {
+        offset, limit,
+        fields: {
+          card: ["front", "back", "mnemonic", "tag", "srsLevel", "nextReview", "createdAt", "updatedAt", "stat", "deck"],
+          template: ["name", "front", "back"],
+          note: ["meta", "data"],
+          source: ["name"]
+        }
+      }),
+      db.parseCond(String.check(q) || {}, {
+        fields: {
+          card: ["_id"]
+        }
+      })
+    ]) 
+
+    return res.json({
+      data,
+      count: ids.length
+    });
   } catch(e) {
     next(e);
   }

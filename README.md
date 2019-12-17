@@ -13,6 +13,5 @@ You can run in development mode with
 ```
 cd app
 yarn
-yarn dev:build
 yarn dev
 ```

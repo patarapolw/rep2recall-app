@@ -2,6 +2,16 @@
   "name": "rep2recall",
   "version": "0.4.0",
   "private": true,
+  "description": "Repeat until you can recall, as a Desktop app",
+  "author": {
+    "name": "Pacharapol Withayasakpunt",
+    "email": "patarapolw@gmail.com",
+    "url": "https://polvcode.dev"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/patarapolw/rep2recall-app.git"
+  },
   "scripts": {
     "start": "open ./dist_electron/mac/$npm_package_name.app",
     "dev:build": "penv base && yarn",

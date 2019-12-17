@@ -8,10 +8,7 @@
     "email": "patarapolw@gmail.com",
     "url": "https://polvcode.dev"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/patarapolw/rep2recall-app.git"
-  },
+  "repository": "github:patarapolw/rep2recall-app",
   "scripts": {
     "start": "open ./dist_electron/mac/$npm_package_name.app",
     "dev:build": "penv base && yarn",

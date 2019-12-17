@@ -1,6 +1,6 @@
 'use strict'
 
-import { app, protocol, BrowserWindow, shell, MenuItemConstructorOptions, Menu } from 'electron'
+import { app, protocol, BrowserWindow, shell, MenuItemConstructorOptions, Menu, ipcMain } from 'electron'
 import {
   createProtocol,
   installVueDevtools
@@ -8,6 +8,7 @@ import {
 import contextMenu from 'electron-context-menu'
 import { fork } from 'child_process'
 import path from 'path'
+import { autoUpdater } from 'electron-updater'
 
 const isDevelopment = process.env.NODE_ENV !== 'production'
 
@@ -100,6 +101,8 @@ app.on('ready', async () => {
   }
   createWindow()
 
+  autoUpdater.checkForUpdatesAndNotify();
+
   const template: MenuItemConstructorOptions[] = [
     {
         label: "Application",
@@ -125,7 +128,9 @@ app.on('ready', async () => {
         label: "Settings",
         submenu: [
             { label: "Preferences", click() {
-                win!.webContents.send("on-menu-pref");
+                if (win) {
+                  win.webContents.send("on-menu-pref");
+                }
             } }
         ]
     }
@@ -156,3 +161,19 @@ function killServer() {
     serverProcess.kill()
   }
 }
+
+autoUpdater.on('update-available', () => {
+  if (win) {
+    win.webContents.send('update_available');
+  }
+});
+
+autoUpdater.on('update-downloaded', () => {
+  if (win) {
+    win.webContents.send('update_downloaded');
+  }
+});
+
+ipcMain.on('restart_app', () => {
+  autoUpdater.quitAndInstall();
+});

@@ -13,16 +13,39 @@
       fontawesome(:icon="['fab', 'github']")
   .body
     router-view
+  #update-notification(v-if="updateMsg")
+    p {{updateMsg}}
+    button(@click="updateMsg = ''") Close
+    button(@click="restartApp" v-if="updateDownloaded") Restart
 </template>
 
 <script lang="ts">
 import { Vue, Component } from "vue-property-decorator";
-import { shell } from "electron";
+import { shell , ipcRenderer } from "electron";
 
 @Component
 export default class App extends Vue {
+  updateMsg = "";
+  updateDownloaded = false;
+
+  mounted() {
+    ipcRenderer.on('update_available', () => {
+      ipcRenderer.removeAllListeners('update_available');
+      this.updateMsg = 'A new update is available. Downloading now...';
+    });
+    ipcRenderer.on('update_downloaded', () => {
+      ipcRenderer.removeAllListeners('update_downloaded');
+      this.updateMsg = 'Update Downloaded. It will be installed on restart. Restart now?';
+      this.updateDownloaded = true;
+    });
+  }
+
   openInExternal(url: string) {
     shell.openExternal(url);
+  }
+
+  restartApp() {
+    ipcRenderer.send('restart_app');
   }
 }
 </script>
@@ -115,5 +138,20 @@ textarea {
 
 pre {
   white-space: pre-wrap;
+}
+
+#update-notification {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  width: 200px;
+  padding: 20px;
+  border-radius: 5px;
+  background-color: white;
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+}
+
+.hidden {
+  display: none;
 }
 </style>

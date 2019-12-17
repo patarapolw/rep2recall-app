@@ -3,5 +3,11 @@
     "dependencies": {
       "liteorm": "https://github.com/patarapolw/liteorm.git#strarray"
     }
+  },
+  "development": {
+    "scripts": {
+      "postinstall": "electron-builder install-app-deps",
+      "postuninstall": "electron-builder install-app-deps"
+    }
   }
 }

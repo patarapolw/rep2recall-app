@@ -43,6 +43,9 @@ module.exports = {
           category: "public.app-category.education",
           icon: "icon.png"
         },
+        win: {
+          icon: "icon.png"
+        },
         fileAssociations: [
           {
             ext: "r2r",

@@ -35,8 +35,7 @@ module.exports = {
         "adm-zip",
         "spark-md5",
         "liteorm",
-        "dot-prop",
-        "sqlite3"
+        "dot-prop"
       ],
       builderOptions: {
         appId: "io.github.patarapolw.rep2recall",

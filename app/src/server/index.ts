@@ -25,5 +25,5 @@ app.use("/api/quiz", quizRouter);
 
 (async () => {
     await g.DB.init();
-    server.listen(g.PORT, () => console.log(`Server running on http://localhost:${g.PORT}`));
+    server.listen(g.PORT, () => console.log(`Server running at http://localhost:${g.PORT}`));
 })().catch((e) => console.error(e));

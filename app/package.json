@@ -16,7 +16,7 @@
     "dev": "vue-cli-service electron:serve",
     "build": "vue-cli-service electron:build",
     "build:server": "tsc -p tsconfig.server.json",
-    "release:mac": "vue-cli-service electron:build"
+    "release:mac": "vue-cli-service electron:build --publish always"
   },
   "main": "background.js",
   "dependencies": {

@@ -36,16 +36,24 @@ module.exports = {
         "adm-zip",
         "spark-md5",
         "liteorm",
-        "dot-prop"
+        "dot-prop",
+        "es6-json-stable-stringify"
       ],
       builderOptions: {
         appId: "io.github.patarapolw.rep2recall",
+        productName: "Rep2Recall",
         mac: {
           category: "public.app-category.education",
           icon: "icon.png"
         },
         win: {
           icon: "icon.png"
+        },
+        linux: {
+          icon: "icon.png"
+        },
+        snap: {
+          publish: "github"
         },
         fileAssociations: [
           {

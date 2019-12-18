@@ -16,7 +16,8 @@
     "dev": "vue-cli-service electron:serve",
     "build": "vue-cli-service electron:build",
     "build:server": "tsc -p tsconfig.server.json",
-    "release:mac": "vue-cli-service electron:build --publish always"
+    "release:mac": "vue-cli-service electron:build --publish always",
+    "release:others": "./release-win-linux.sh"
   },
   "main": "background.js",
   "dependencies": {
@@ -74,6 +75,7 @@
     "hyperscript": "^2.0.2",
     "jquery": "^3.4.1",
     "jquery-contextmenu": "^2.9.0",
+    "js-yaml": "^3.13.1",
     "lodash.merge": "^4.6.2",
     "open": "^7.0.0",
     "penv": "^0.2.0",

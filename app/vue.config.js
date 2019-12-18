@@ -38,34 +38,7 @@ module.exports = {
         "liteorm",
         "dot-prop",
         "es6-json-stable-stringify"
-      ],
-      builderOptions: {
-        appId: "io.github.patarapolw.rep2recall",
-        productName: "Rep2Recall",
-        mac: {
-          category: "public.app-category.education",
-          icon: "icon.png"
-        },
-        win: {
-          icon: "icon.png"
-        },
-        linux: {
-          icon: "icon.png"
-        },
-        snap: {
-          publish: "github"
-        },
-        fileAssociations: [
-          {
-            ext: "r2r",
-            role: "Editor"
-          },
-          {
-            ext: "apkg",
-            role: "Editor"
-          }
-        ]
-      }
+      ]
     }
   }
 }

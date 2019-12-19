@@ -12,6 +12,13 @@
     "postuninstall": "electron-builder install-app-deps"
   },
   "main": "background.js",
+  "description": "Repeat until you can recall",
+  "author": {
+    "email": "patarapolw@gmail.com",
+    "name": "Pacharapol Withayasakpunt",
+    "url": "https://www.polvcode.dev"
+  },
+  "repository": "github:patarapolw/rep2recall-app",
   "dependencies": {
     "@types/adm-zip": "^0.4.32",
     "@types/cors": "^2.8.6",
@@ -31,6 +38,8 @@
     "express": "^4.17.1",
     "express-fileupload": "^1.1.6",
     "fs-extra": "^8.1.0",
+    "liteorm": "https://github.com/patarapolw/liteorm.git#strarray",
+    "moment": "^2.24.0",
     "rest-ts-core": "^0.5.0",
     "rest-ts-express": "^0.5.0",
     "rimraf": "^3.0.0",
@@ -70,7 +79,7 @@
     "codemirror": "^5.49.2",
     "dot-prop": "^5.2.0",
     "electron": "^6.0.0",
-    "eslint": "^6.7.2",
+    "eslint": "^5.0.0",
     "eslint-plugin-json": "^2.0.1",
     "eslint-plugin-vue": "^5.0.0",
     "flatpickr": "^4.6.3",
@@ -113,8 +122,5 @@
   "browserslist": [
     "> 1%",
     "last 2 versions"
-  ],
-  "optionalDependencies": {
-    "liteorm": "https://github.com/patarapolw/liteorm.git#strarray"
-  }
+  ]
 }

@@ -14,32 +14,34 @@
 </template>
 
 <script lang="ts">
-import { Vue, Component } from "vue-property-decorator";
-import { shell } from "electron";
-import { ax } from "../global";
+import { Vue, Component } from 'vue-property-decorator'
+import { shell } from 'electron'
+import { mediaApi, BASE_URL } from '../global'
 
 @Component
 export default class Settings extends Vue {
-  mediaFolder = "";
+  mediaFolder = '';
 
-  mounted() {
-    ax.post("/api/media/").then(r => {
-      this.mediaFolder = r.data.path;
-    });
+  mounted () {
+    mediaApi.path().then((r) => {
+      this.mediaFolder = r.data.folder
+    })
   }
 
-  openMediaFolder() {
-    shell.openItem(this.mediaFolder);
+  openMediaFolder () {
+    shell.openItem(this.mediaFolder)
   }
 
-  async onResetDatabaseClicked() {
+  async onResetDatabaseClicked () {
     const r = await this.$bvModal.msgBoxConfirm(
-      "Please ensure you want to reset the database. The app will restart afterwards.");
+      'Please ensure you want to reset the database. The app will restart afterwards.')
 
     if (r) {
-      const rDelete = await ax.delete("/api/reset");
+      const rDelete = await fetch(`${BASE_URL}/api/reset`, {
+        method: 'DELETE'
+      })
       if (rDelete.status === 201) {
-        this.$bvModal.msgBoxOk("Database is reset");
+        this.$bvModal.msgBoxOk('Database is reset')
       }
     }
   }

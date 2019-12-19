@@ -42,7 +42,7 @@
             input(type="checkbox" @click.native="onCheckboxClicked($event, d.id)" :checked="checkedIds.has(d.id)")
         td(v-for="a in getOrderedDict(d)" :key="a[0]")
           .wrapper
-            iframe.wrapped(v-if="a[2].type === 'html'" :srcdoc="getHtml(d, a[0])" frameborder="0")
+            my-iframe.wrapped(v-if="a[2].type === 'html'" :html="getHtml(d, a[0])")
             .wrapped(v-else-if="a[2].type === 'datetime'") {{ stringifyDate(a[1]) }}
             .wrapped(v-else-if="a[2].type === 'tag'")
               p(v-for="b in a[1]" :key="b" v-html="toHtmlAndBreak(b)")
@@ -62,31 +62,33 @@
 </template>
 
 <script lang="ts">
-import { Vue, Component, Watch } from "vue-property-decorator";
-import EntryEditor from "../components/EntryEditor.vue";
-import { ax, DateFormat, Columns } from "../global";
-import flatpickr from "flatpickr";
-import dotProp from "dot-prop";
-import { fixData, quizDataToContent } from "../utils";
+import { Vue, Component, Watch } from 'vue-property-decorator'
+import EntryEditor from '../components/EntryEditor.vue'
+import MyIframe from '../components/MyIframe.vue'
+import { DateFormat, Columns, editorApi, quizApi } from '../global'
+import flatpickr from 'flatpickr'
+import dotProp from 'dot-prop'
+import { fixData, quizDataToContent } from '../utils'
 
 @Component({
   components: {
-    EntryEditor
+    EntryEditor,
+    MyIframe
   }
 })
 export default class Editor extends Vue {
-  q = "";
+  q = '';
   offset = 0;
   limit = 10;
   count = 0;
-  sortBy = "deck";
+  sortBy = 'deck';
   desc = false;
   data: any[] = [];
-  checkedIds: Set<number> = new Set();
+  checkedIds: Set<string> = new Set();
   allCardsSelected = false;
   isLoading = false;
-  newDeckName = "";
-  newTagName = "";
+  newDeckName = '';
+  newTagName = '';
   isAddTags = false;
 
   colWidths = {
@@ -94,29 +96,29 @@ export default class Editor extends Vue {
     extra: 250
   };
 
-  mounted() {
-    this.fetchData();
+  mounted () {
+    this.fetchData()
   }
 
-  get editorLabel() {
-    const from = this.count === 0 ? 0 : this.offset + 1;
-    let to = this.offset + this.data.length;
+  get editorLabel () {
+    const from = this.count === 0 ? 0 : this.offset + 1
+    let to = this.offset + this.data.length
     if (to < from) {
-      to = from;
+      to = from
     }
 
-    return `${from.toLocaleString()}-${to.toLocaleString()} of ${this.count.toLocaleString()}`;
+    return `${from.toLocaleString()}-${to.toLocaleString()} of ${this.count.toLocaleString()}`
   }
 
-  get tableCols() {
-    const cols = Columns.slice();
-    const extraCols: string[] = [];
+  get tableCols () {
+    const cols = Columns.slice()
+    const extraCols: string[] = []
 
     for (const d of this.data) {
       if (d.data) {
         for (const it of d.data) {
           if (!extraCols.includes(it.key)) {
-            extraCols.push(it.key);
+            extraCols.push(it.key)
           }
         }
       }
@@ -126,238 +128,248 @@ export default class Editor extends Vue {
       cols.push(
         ...[
           {
-            name: "source",
-            label: "Source"
+            name: 'source',
+            label: 'Source'
           },
           {
-            name: "template",
-            label: "Template"
+            name: 'template',
+            label: 'Template'
           }
         ]
-      );
+      )
     }
 
     extraCols.forEach(c => {
       cols.push({
         name: `@${c}`,
         label: c[0].toLocaleUpperCase() + c.substr(1)
-      });
-    });
+      })
+    })
 
-    return cols;
+    return cols
   }
 
-  get tableWidth(): number {
+  get tableWidth (): number {
     return (
       this.colWidths.checkbox +
       this.tableCols
         .map(c => c.width || this.colWidths.extra)
         .reduce((a, v) => a + v)
-    );
+    )
   }
 
-  getOrderedDict(d: any): any[][] {
-    const output: any[][] = [];
+  getOrderedDict (d: any): any[][] {
+    const output: any[][] = []
     this.tableCols.forEach(c => {
-      output.push([c.name, dotProp.get(d, c.name), c]);
-    });
+      output.push([c.name, dotProp.get(d, c.name), c])
+    })
 
-    return output;
+    return output
   }
 
-  stringifyDate(d?: string): string {
-    return d ? flatpickr.formatDate(new Date(d), DateFormat) : "";
+  stringifyDate (d?: string): string {
+    return d ? flatpickr.formatDate(new Date(d), DateFormat) : ''
   }
 
-  toHtmlAndBreak(s?: string): string {
-    const div = document.createElement("div");
-    div.innerText = s || "";
-    return div.innerHTML.replace(/(\_)/g, "$1<wbr/>");
+  toHtmlAndBreak (s?: string): string {
+    const div = document.createElement('div')
+    div.innerText = s || ''
+    return div.innerHTML.replace(/(_)/g, '$1<wbr/>')
   }
 
-  async onEntrySaved(update: any) {
-    this.reset();
-    this.sortBy = this.checkedIds.size > 0 ? "modified" : "created";
-    this.desc = true;
-    this.fetchData();
+  async onEntrySaved (update: any) {
+    this.reset()
+    this.sortBy = this.checkedIds.size > 0 ? 'modified' : 'created'
+    this.desc = true
+    this.fetchData()
   }
 
-  async deleteCards() {
+  async deleteCards () {
     const r = await this.$bvModal.msgBoxConfirm(
-      "Are you sure you want to delete the following cards"
-    );
+      'Are you sure you want to delete the following cards'
+    )
 
     if (r) {
-      this.isLoading = true;
-      await ax.delete("/api/editor/", {
-        data: { ids: Array.from(this.checkedIds) }
-      });
-      this.fetchData();
+      this.isLoading = true
+      await editorApi.delete({
+        body: { ids: Array.from(this.checkedIds) }
+      })
+      this.fetchData()
     }
   }
 
-  async onDeckRenamed() {
+  async onDeckRenamed () {
     if (this.newDeckName) {
-      this.isLoading = true;
-      await ax.put("/api/editor/", {
-        ids: Array.from(this.checkedIds),
-        update: { deck: this.newDeckName }
-      });
+      this.isLoading = true
+      await editorApi.update({
+        body: {
+          ids: Array.from(this.checkedIds),
+          update: { deck: this.newDeckName }
+        }
+      })
 
-      this.fetchData();
+      this.fetchData()
     }
   }
 
-  editTags(isAdd: boolean) {
-    this.isAddTags = isAdd;
-    this.$bvModal.show("edit-tags");
+  editTags (isAdd: boolean) {
+    this.isAddTags = isAdd
+    this.$bvModal.show('edit-tags')
   }
 
-  async onNewTags() {
-    this.isLoading = true;
+  async onNewTags () {
+    this.isLoading = true
 
     if (this.isAddTags) {
-      await ax.put(`/api/editor/addTags`, {
-        ids: Array.from(this.checkedIds),
-        tags: this.newTagName.split(" ")
-      });
-    } else {
-      await ax.delete(`/api/editor/removeTags`, {
-        data: {
+      await editorApi.addTags({
+        body: {
           ids: Array.from(this.checkedIds),
-          tags: this.newTagName.split(" ")
+          tags: this.newTagName.split(' ')
         }
-      });
+      })
+    } else {
+      await editorApi.removeTags({
+        body: {
+          ids: Array.from(this.checkedIds),
+          tags: this.newTagName.split(' ')
+        }
+      })
     }
 
-    this.fetchData();
+    this.fetchData()
   }
 
-  onSearchbarKeypress(evt: any) {
-    if (evt.key === "Enter") {
-      this.fetchData();
+  onSearchbarKeypress (evt: any) {
+    if (evt.key === 'Enter') {
+      this.fetchData()
     }
   }
 
-  onCheckboxClicked(evt: any, id?: number) {
-    const checkboxMain = this.$refs["checkbox.main"] as HTMLInputElement;
+  onCheckboxClicked (evt: any, id?: string) {
+    const checkboxMain = this.$refs['checkbox.main'] as HTMLInputElement
 
     if (id) {
-      const checkboxCurrent = evt.target as HTMLInputElement;
+      const checkboxCurrent = evt.target as HTMLInputElement
       if (checkboxCurrent.checked) {
-        this.checkedIds.add(id);
+        this.checkedIds.add(id)
       } else {
-        this.checkedIds.delete(id);
+        this.checkedIds.delete(id)
       }
-      this.calculateCheckboxMainStatus();
+      this.calculateCheckboxMainStatus()
     } else {
-      checkboxMain.indeterminate = false;
+      checkboxMain.indeterminate = false
       if (checkboxMain.checked) {
         this.data.forEach(d => {
-          this.checkedIds.add(d.id);
-        });
+          this.checkedIds.add(d.id)
+        })
 
         if (this.count > this.limit) {
-          this.$bvToast.show("select-all-cards");
+          this.$bvToast.show('select-all-cards')
         }
       } else {
-        this.allCardsSelected = false;
-        this.checkedIds.clear();
+        this.allCardsSelected = false
+        this.checkedIds.clear()
       }
     }
 
-    this.$forceUpdate();
+    this.$forceUpdate()
   }
 
-  async onAllCardsSelected() {
-    this.isLoading = true;
-    const { ids } = (await ax.post("/api/quiz/", {
-      q: this.q,
-      type: "all"
-    })).data;
-    this.checkedIds = new Set(ids);
-    this.allCardsSelected = true;
-    this.isLoading = false;
+  async onAllCardsSelected () {
+    this.isLoading = true
+    const { ids } = (await quizApi.get({
+      body: {
+        q: this.q,
+        type: 'all'
+      }
+    })).data
+    this.checkedIds = new Set(ids)
+    this.allCardsSelected = true
+    this.isLoading = false
   }
 
-  onTableHeaderClicked(name: string) {
+  onTableHeaderClicked (name: string) {
     if (this.sortBy === name) {
-      this.desc = !this.desc;
+      this.desc = !this.desc
     } else {
-      this.sortBy = name;
-      this.desc = false;
+      this.sortBy = name
+      this.desc = false
     }
   }
 
-  onTableRowClicked(id: number) {
-    const availableIds = new Set(this.data.map(row => row.id));
+  onTableRowClicked (id: string) {
+    const availableIds = new Set(this.data.map(row => row.id))
 
     this.checkedIds.forEach(c => {
       if (!availableIds.has(c)) {
-        this.checkedIds.delete(c);
+        this.checkedIds.delete(c)
       }
-    });
+    })
 
     if (this.checkedIds.has(id)) {
-      this.checkedIds.delete(id);
+      this.checkedIds.delete(id)
     } else {
-      this.checkedIds.add(id);
+      this.checkedIds.add(id)
     }
 
-    this.calculateCheckboxMainStatus();
-    this.$forceUpdate();
+    this.calculateCheckboxMainStatus()
+    this.$forceUpdate()
   }
 
-  getHtml(data: any, side: "front" | "back" | "note"): string {
-    return quizDataToContent(data, side);
+  getHtml (data: any, side: 'front' | 'back' | 'note'): string {
+    return quizDataToContent(data, side)
   }
 
-  calculateCheckboxMainStatus() {
-    const checkboxMain = this.$refs["checkbox.main"] as HTMLInputElement;
-    this.allCardsSelected = false;
+  calculateCheckboxMainStatus () {
+    const checkboxMain = this.$refs['checkbox.main'] as HTMLInputElement
+    this.allCardsSelected = false
     checkboxMain.indeterminate =
-      this.checkedIds.size > 0 && this.checkedIds.size < this.data.length;
+      this.checkedIds.size > 0 && this.checkedIds.size < this.data.length
   }
 
-  reset(clearSearchParams: boolean = true) {
+  reset (clearSearchParams: boolean = true) {
     if (clearSearchParams) {
-      this.q = "";
-      this.offset = 0;
+      this.q = ''
+      this.offset = 0
     }
 
-    this.allCardsSelected = false;
-    const checkboxMain = this.$refs["checkbox.main"] as HTMLInputElement;
-    checkboxMain.indeterminate = false;
-    this.checkedIds.clear();
+    this.allCardsSelected = false
+    const checkboxMain = this.$refs['checkbox.main'] as HTMLInputElement
+    checkboxMain.indeterminate = false
+    this.checkedIds.clear()
   }
 
-  @Watch("offset")
-  @Watch("sortBy")
-  @Watch("desc")
-  async fetchData() {
+  @Watch('offset')
+  @Watch('sortBy')
+  @Watch('desc')
+  async fetchData () {
     if (isNaN(this.offset)) {
-      this.offset = this.count - this.limit;
+      this.offset = this.count - this.limit
     } else if (this.offset < 0) {
-      this.offset = 0;
+      this.offset = 0
     }
 
-    this.isLoading = true;
+    this.isLoading = true
 
-    const r = (await ax.post("/api/editor/", {
-      q: this.q,
-      offset: this.offset,
-      limit: this.limit,
-      sortBy: this.sortBy,
-      desc: this.desc
-    })).data;
+    const r = (await editorApi.get({
+      body: {
+        q: this.q,
+        offset: this.offset,
+        limit: this.limit,
+        sort: {
+          key: this.sortBy,
+          desc: this.desc
+        }
+      }
+    })).data
 
-    this.data = r.data.map((d: any) => fixData(d));
-    this.count = r.count;
+    this.data = r.data.map((d: any) => fixData(d))
+    this.count = r.count
 
-    this.reset(false);
-    document.getElementById("editorTable")!.scrollIntoView();
+    this.reset(false)
+    document.getElementById('editorTable')!.scrollIntoView()
 
-    this.isLoading = false;
+    this.isLoading = false
   }
 }
 </script>

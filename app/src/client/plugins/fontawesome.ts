@@ -8,7 +8,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 library.add(
   faFileImport, faCog, faCheckDouble, faChevronDown, faChevronRight,
   faQuestionCircle, faEdit,
-  faGithub,
+  faGithub
 )
 
 Vue.component('fontawesome', FontAwesomeIcon)

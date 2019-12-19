@@ -6,21 +6,21 @@ Vue.use(VueRouter)
 const router = new VueRouter({
   routes: [
     {
-      path: "/quiz",
-      alias: "/",
-      component: () => import(/* webpackChuckName: "quiz" */ "../views/Quiz.vue")
+      path: '/quiz',
+      alias: '/',
+      component: () => import(/* webpackChuckName: "quiz" */ '../views/Quiz.vue')
     },
     {
-      path: "/editor",
-      component: () => import(/* webpackChuckName: "editor" */ "../views/Editor.vue")
+      path: '/editor',
+      component: () => import(/* webpackChuckName: "editor" */ '../views/Editor.vue')
     },
     {
-      path: "/import",
-      component: () => import(/* webpackChuckName: "import" */ "../views/Import.vue")
+      path: '/import',
+      component: () => import(/* webpackChuckName: "import" */ '../views/Import.vue')
     },
     {
-      path: "/settings",
-      component: () => import(/* webpackChuckName: "settings" */ "../views/Settings.vue")
+      path: '/settings',
+      component: () => import(/* webpackChuckName: "settings" */ '../views/Settings.vue')
     }
   ]
 })

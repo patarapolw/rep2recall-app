@@ -1,30 +1,35 @@
-import "jquery-contextmenu";
-import $ from "jquery";
-import "jquery-contextmenu/dist/jquery.contextMenu.min.css";
+import 'jquery-contextmenu'
+import $ from 'jquery'
+import 'jquery-contextmenu/dist/jquery.contextMenu.min.css'
+
+declare global {
+  interface JQueryStatic {
+    contextMenu: any;
+  }
+}
 
 $(() => {
-  // @ts-ignore
   $.contextMenu({
-    selector: ".tree-text",
-    callback(key: string, opt: any) {
-      opt.$trigger.data(key)();
+    selector: '.tree-text',
+    callback (key: string, opt: any) {
+      opt.$trigger.data(key)()
     },
     items: {
-      due: { name: "Review due" },
-      leech: { name: "Review leech" },
-      new: { name: "Review new" },
-      dueAndNew: { name: "Review due and new" },
-      separator1: "-----",
-      all: { name: "Review all" },
-      separator2: "-----",
+      due: { name: 'Review due' },
+      leech: { name: 'Review leech' },
+      new: { name: 'Review new' },
+      dueAndNew: { name: 'Review due and new' },
+      separator1: '-----',
+      all: { name: 'Review all' },
+      separator2: '-----',
       exportGroup: {
-        name: "Export",
+        name: 'Export',
         items: {
-          exportDeck: { name: "Export Deck" },
-          exportDeckAndReset: { name: "Export Deck and Reset" }
+          exportDeck: { name: 'Export Deck' },
+          exportDeckAndReset: { name: 'Export Deck and Reset' }
         }
       },
-      delete: { name: "Delete deck" }
+      delete: { name: 'Delete deck' }
     }
-  });
-});
+  })
+})

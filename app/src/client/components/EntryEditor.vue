@@ -76,14 +76,14 @@ b-modal(:id="id" :title="title" size="lg" @show="onModalShown" @ok="onModalOk")
 </template>
 
 <script lang="ts">
-import { Vue, Component, Prop, Emit } from "vue-property-decorator";
-import DatetimeNullable from "./DatetimeNullable.vue";
-import TagEditor from "./TagEditor.vue";
-import MarkdownEditor from "./MarkdownEditor.vue";
-import dotProp from "dot-prop";
-import deepMerge from "lodash.merge";
-import { ax, Columns } from "../global";
-import { fixData } from "../utils";
+import { Vue, Component, Prop, Emit } from 'vue-property-decorator'
+import DatetimeNullable from './DatetimeNullable.vue'
+import TagEditor from './TagEditor.vue'
+import MarkdownEditor from './MarkdownEditor.vue'
+import dotProp from 'dot-prop'
+import deepMerge from 'lodash.merge'
+import { Columns, editorApi } from '../global'
+import { fixData } from '../utils'
 
 @Component({
   components: {
@@ -93,8 +93,8 @@ import { fixData } from "../utils";
   }
 })
 export default class EntryEditor extends Vue {
-  @Prop({required: true}) id!: string;
-  @Prop() entryId?: number;
+  @Prop({ required: true }) id!: string;
+  @Prop() entryId?: string;
   @Prop() title!: string;
 
   data: any = {};
@@ -104,101 +104,107 @@ export default class EntryEditor extends Vue {
   dotProp = dotProp;
   deepMerge = deepMerge;
 
-  get dataCols() {
+  get dataCols () {
     return Object.keys(this.data.data || {})
       .map((c) => {
         return {
           name: `@${c}`,
           label: c
-        };
-      });
+        }
+      })
   }
 
-  private getParsedData(key: string) {
-    let v: string = this.data[key] || "";
+  private getParsedData (key: string) {
+    let v: string = this.data[key] || ''
 
-    if (v.startsWith("@rendered\n")) {
+    if (v.startsWith('@rendered\n')) {
       v =
-        "@template\n" +
-        (this.data[`t${key[0].toLocaleUpperCase() + key.substr(1)}`] || "");
+        '@template\n' +
+        (this.data[`t${key[0].toLocaleUpperCase() + key.substr(1)}`] || '')
     }
 
-    return v;
+    return v
   }
 
-  private onExtraRowInput(evt: any) {
-    const k = evt.target.value;
+  private onExtraRowInput (evt: any) {
+    const k = evt.target.value
 
-    if (evt.key === "Enter") {
-      evt.preventDefault();
+    if (evt.key === 'Enter') {
+      evt.preventDefault()
 
       if (k) {
         if (!this.data.data) {
-          Vue.set(this.data, "data", []);
+          Vue.set(this.data, 'data', [])
         }
 
-        let toAdd = true;
+        let toAdd = true
         for (const it of this.data.data) {
           if (it.key === k) {
-            toAdd = false;
+            toAdd = false
           }
         }
         if (toAdd) {
           this.data.data.push({
             key: k,
-            value: ""
-          });
+            value: ''
+          })
         }
 
-        evt.target.value = "";
+        evt.target.value = ''
       }
     }
   }
 
-  private async onModalShown() {
-    this.data = {};
-    this.update = {};
+  private async onModalShown () {
+    this.data = {}
+    this.update = {}
     this.$nextTick(() => {
-      (this.$refs.form as HTMLElement).classList.remove("was-validated");
-    });
+      (this.$refs.form as HTMLElement).classList.remove('was-validated')
+    })
 
     if (this.entryId) {
-      this.isLoading = true;
+      this.isLoading = true
 
-      const data = (await ax.post("/api/editor/", {cond: { id: this.entryId }})).data;
-      Vue.set(this, "data", fixData(data.data[0]));
+      const { data } = await editorApi.get({
+        body: { q: { id: this.entryId } }
+      })
+      Vue.set(this, 'data', fixData(data.data[0]))
     }
 
-    this.isLoading = false;
+    this.isLoading = false
   }
 
-  @Emit("ok")
-  private async onModalOk(evt: any) {
+  @Emit('ok')
+  private async onModalOk (evt: any) {
     for (const c of Columns) {
       if (c.required) {
         if (this.update[c.name] === undefined && !this.data[c.name]) {
-          (this.$refs.form as HTMLElement).classList.add("was-validated");
-          evt.preventDefault();
-          return {};
+          (this.$refs.form as HTMLElement).classList.add('was-validated')
+          evt.preventDefault()
+          return {}
         }
       }
     }
 
     if (Object.keys(this.update).length > 0) {
       if (this.entryId) {
-        const r = await ax.put("/api/editor/", { id: this.entryId, update: this.update });
+        const r = await editorApi.update({
+          body: { ids: [this.entryId], update: this.update }
+        })
         if (r.status === 201) {
-          this.$bvModal.msgBoxOk("Updated");
+          this.$bvModal.msgBoxOk('Updated')
         }
       } else {
-        const r = await ax.put("/api/editor/", { create: this.update });
+        const r = await editorApi.create({
+          body: { create: this.update }
+        })
         if (r.status === 201) {
-          this.$bvModal.msgBoxOk("Created");
+          this.$bvModal.msgBoxOk('Created')
         }
       }
     }
 
-    return this.update;
+    return this.update
   }
 }
 </script>

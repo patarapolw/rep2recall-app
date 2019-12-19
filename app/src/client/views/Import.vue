@@ -18,94 +18,95 @@
 </template>
 
 <script lang="ts">
-import { Vue, Component, Watch } from "vue-property-decorator";
-import io from "socket.io-client";
+import { Vue, Component, Watch } from 'vue-property-decorator'
+import io from 'socket.io-client'
+import { BASE_URL } from '../global'
 
 @Component
 export default class Import extends Vue {
   importFile: File | null = null;
   progress: any = {};
 
-  getProgressPercent() {
+  getProgressPercent () {
     return (
       (this.progress.max
         ? (this.progress.current / this.progress.max) * 100
         : 100
-      ).toFixed(0) + "%"
-    );
+      ).toFixed(0) + '%'
+    )
   }
 
-  preventHide(e: any) {
+  preventHide (e: any) {
     if (this.progress.text) {
-      e.preventDefault();
+      e.preventDefault()
     }
   }
 
-  onImportFileChanged(e: any) {
-    this.importFile = e.target.files[0];
+  onImportFileChanged (e: any) {
+    this.importFile = e.target.files[0]
   }
 
-  onImportButtonClicked() {
-    const formData = new FormData();
-    formData.append("file", this.importFile!);
-    (this.$refs.uploadModal as any).show();
+  onImportButtonClicked () {
+    const formData = new FormData()
+    formData.append('file', this.importFile!);
+    (this.$refs.uploadModal as any).show()
 
     this.progress = {
-      text: "Uploading..."
-    };
+      text: 'Uploading...'
+    }
 
-    const xhr = new XMLHttpRequest();
+    const xhr = new XMLHttpRequest()
     xhr.upload.onprogress = evt => {
       Object.assign(this.progress, {
         text: `Uploading ${this.importFile!.name}`,
         current: evt.loaded / evt.total,
         max: 1
-      });
-    };
+      })
+    }
     xhr.onload = () => {
       Object.assign(this.progress, {
         text: `Parsing ${this.importFile!.name}`,
         max: 0
-      });
-      const { id } = JSON.parse(xhr.responseText);
-      const ws = io(location.origin);
-      let started = false;
+      })
+      const { id } = JSON.parse(xhr.responseText)
+      const ws = io(location.origin)
+      let started = false
 
-      ws.on("connect", () => {
+      ws.on('connect', () => {
         if (!started) {
           ws.send({
             id,
             type: /\.[^.]+$/.exec(this.importFile!.name)![0]
-          });
-          started = true;
+          })
+          started = true
         }
-      });
+      })
 
-      ws.on("message", (msg: any) => {
+      ws.on('message', (msg: any) => {
         try {
-          Vue.set(this, "progress", msg);
+          Vue.set(this, 'progress', msg)
           if (this.progress.error || !this.progress.text) {
-            ws.close();
+            ws.close()
           }
         } catch (e) {
-          console.log(msg);
+          console.log(msg)
         }
-      });
-    };
+      })
+    }
 
-    xhr.open("POST", "/api/io/import");
-    xhr.send(formData);
+    xhr.open('PUT', `${BASE_URL}/api/io/`)
+    xhr.send(formData)
   }
 
-  @Watch("progress")
-  private watchProgress() {
+  @Watch('progress')
+  private watchProgress () {
     if (!this.progress.text) {
-      (this.$refs.uploadModal as any).hide();
+      (this.$refs.uploadModal as any).hide()
 
       if (this.progress.error) {
-        this.$bvModal.msgBoxOk(this.progress.error);
+        this.$bvModal.msgBoxOk(this.progress.error)
       } else {
-        this.$bvModal.msgBoxOk("Success");
+        this.$bvModal.msgBoxOk('Success')
       }
     }
   }

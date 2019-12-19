@@ -6,11 +6,11 @@
 </template>
 
 <script lang="ts">
-import { Vue, Component, Prop } from "vue-property-decorator";
-import flatpickr from "flatpickr";
-import "flatpickr/dist/flatpickr.min.css";
-import { DateFormat } from "../global";
-import { normalizeArray } from "../utils";
+import { Vue, Component, Prop } from 'vue-property-decorator'
+import flatpickr from 'flatpickr'
+import 'flatpickr/dist/flatpickr.min.css'
+import { DateFormat } from '../global'
+import { normalizeArray } from '../utils'
 
 @Component
 export default class DatetimeNullable extends Vue {
@@ -20,7 +20,7 @@ export default class DatetimeNullable extends Vue {
 
   flatpickr?: flatpickr.Instance;
 
-  mounted() {
+  mounted () {
     this.flatpickr = normalizeArray(
       flatpickr(this.$refs.flatpickr as HTMLInputElement, {
         enableTime: true,
@@ -29,28 +29,28 @@ export default class DatetimeNullable extends Vue {
         clickOpens: !this.readonly,
         onClose: dates => {
           if (dates.length > 0) {
-            this.setDate(dates[0]);
+            this.setDate(dates[0])
           }
         }
       })
-    );
+    )
   }
 
-  setDate(d?: Date) {
+  setDate (d?: Date) {
     if (this.flatpickr) {
       if (d) {
-        this.flatpickr.setDate(d);
+        this.flatpickr.setDate(d)
       } else {
-        this.flatpickr.clear();
+        this.flatpickr.clear()
       }
     }
 
-    this.$emit("input", d ? d.toISOString() : null);
+    this.$emit('input', d ? d.toISOString() : null)
   }
 
-  formatDate(d: string) {
-    const dDate = d ? new Date(d) : undefined;
-    return dDate;
+  formatDate (d: string) {
+    const dDate = d ? new Date(d) : undefined
+    return dDate
   }
 }
 </script>

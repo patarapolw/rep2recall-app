@@ -1,0 +1,9 @@
+- Install Vue CLI
+- `vue create app` with TypeScript support
+  - Babel, TS, Router, CSS Pre-processors
+  - Class-styled components
+  - Hash mode router
+  - +/- linter
+- `cd app`
+- `vue add electron-builder`
+- `yarn add vue-cli-plugin-pug -D`

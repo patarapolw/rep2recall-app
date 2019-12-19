@@ -8,26 +8,26 @@
 </template>
 
 <script lang="ts">
-import { Vue, Component, Prop, Emit } from "vue-property-decorator";
+import { Vue, Component, Prop, Emit } from 'vue-property-decorator'
 
 @Component
 export default class TagEditor extends Vue {
-  @Prop({required: true}) value!: string;
+  @Prop({ required: true }) value!: string;
 
-  get tagSet() {
-    return new Set(this.value.split(" ").filter(v => v));
+  get tagSet () {
+    return new Set(this.value.split(' ').filter(v => v))
   }
 
-  @Emit("input")
-  onMarkButtonClicked() {
-    if (this.tagSet.has("marked")) {
-      this.tagSet.delete("marked");
+  @Emit('input')
+  onMarkButtonClicked () {
+    if (this.tagSet.has('marked')) {
+      this.tagSet.delete('marked')
     } else {
-      this.tagSet.add("marked");
+      this.tagSet.add('marked')
     }
     return Array.from(this.tagSet)
       .filter(v => v)
-      .join(" ");
+      .join(' ')
   }
 }
 </script>

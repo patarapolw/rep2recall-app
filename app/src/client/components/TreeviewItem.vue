@@ -14,8 +14,8 @@ li(v-if="!isDeleted")
 </template>
 
 <script lang="ts">
-import { Vue, Component, Prop, Watch } from "vue-property-decorator";
-import quizState from "../states/quiz";
+import { Vue, Component, Prop, Watch } from 'vue-property-decorator'
+import quizState from '../states/quiz'
 
 interface ITreeViewStat {
   new: number;
@@ -32,14 +32,14 @@ export interface ITreeViewItem {
 }
 
 @Component({
-  name: "treeview-item"
+  name: 'treeview-item'
 })
 export default class TreeviewItem extends Vue {
-  @Prop({required: true}) data!: ITreeViewItem;
-  @Prop({required: true}) q!: string;
-  @Prop({required: true}) parentIsOpen!: boolean;
-  @Prop({required: true}) onReview!: (deck: string, type?: string) => any;
-  @Prop({required: true}) onDelete!: (deck: string) => Promise<boolean>;
+  @Prop({ required: true }) data!: ITreeViewItem;
+  @Prop({ required: true }) q!: string;
+  @Prop({ required: true }) parentIsOpen!: boolean;
+  @Prop({ required: true }) onReview!: (deck: string, type?: string) => any;
+  @Prop({ required: true }) onDelete!: (deck: string) => Promise<boolean>;
 
   isOpen = false;
   isShownStat = true;
@@ -47,65 +47,65 @@ export default class TreeviewItem extends Vue {
 
   state = quizState;
 
-  constructor(props: any) {
-    super(props);
+  constructor (props: any) {
+    super(props)
     this.isOpen =
-      this.data.isOpen !== undefined ? this.data.isOpen : this.isOpen;
+      this.data.isOpen !== undefined ? this.data.isOpen : this.isOpen
   }
 
-  mounted() {
-    $(this.$refs["tree-text"]).data({
+  mounted () {
+    $(this.$refs['tree-text']).data({
       dueAndNew: () => this.startReview(),
-      due: () => this.startReview("due"),
-      leech: () => this.startReview("leech"),
-      new: () => this.startReview("new"),
-      all: () => this.startReview("all"),
+      due: () => this.startReview('due'),
+      leech: () => this.startReview('leech'),
+      new: () => this.startReview('new'),
+      all: () => this.startReview('all'),
       exportDeck: () => {
         location.href = `/api/io/export?deck=${encodeURIComponent(
           this.data.fullName
-        )}`;
+        )}`
       },
       exportDeckAndReset: () => {
         location.href = `/api/io/export?deck=${encodeURIComponent(
           this.data.fullName
-        )}&reset=true`;
+        )}&reset=true`
       },
       delete: async () => {
         if (await this.onDelete(this.data.fullName)) {
-          this.isDeleted = true;
+          this.isDeleted = true
         }
       }
-    });
-    this.updateStat();
+    })
+    this.updateStat()
   }
 
-  async startReview(type?: string) {
-    await this.onReview(this.data.fullName, type);
-    this.updateStat();
+  async startReview (type?: string) {
+    await this.onReview(this.data.fullName, type)
+    this.updateStat()
   }
 
-  @Watch("q")
-  @Watch("isOpen")
-  updateStat() {
+  @Watch('q')
+  @Watch('isOpen')
+  updateStat () {
     if (!this.data.children || (this.parentIsOpen && !this.isOpen)) {
-      this.isShownStat = true;
+      this.isShownStat = true
     } else {
-      this.isShownStat = false;
+      this.isShownStat = false
     }
   }
 
-  readMq(
+  readMq (
     mq: MediaQueryListEvent | MediaQueryList = this.state.mediaQuery
   ) {
     if (mq.matches && this.state.isQuizShown) {
-      this.state.isDeckHidden = true;
+      this.state.isDeckHidden = true
     } else {
-      this.state.isDeckHidden = false;
+      this.state.isDeckHidden = false
     }
   }
 
-  onCaretClicked() {
-    this.isOpen = !this.isOpen;
+  onCaretClicked () {
+    this.isOpen = !this.isOpen
   }
 }
 </script>

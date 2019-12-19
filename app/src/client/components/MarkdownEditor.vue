@@ -10,26 +10,26 @@
 </template>
 
 <script lang="ts">
-import { Vue, Component, Prop, Emit } from "vue-property-decorator";
-import { quizDataToContent, ankiMustache } from "../utils";
+import { Vue, Component, Prop, Emit } from 'vue-property-decorator'
+import { quizDataToContent, ankiMustache } from '../utils'
 
 @Component
 export default class MarkdownEditor extends Vue {
   @Prop() required?: boolean;
-  @Prop({ default: "" }) value!: string;
+  @Prop({ default: '' }) value!: string;
   @Prop() invalidFeedback?: string;
   @Prop({ required: true }) data: any;
 
-  html: string = "";
+  html: string = '';
 
-  @Emit("input")
-  onValueChanged(newValue: string) {
+  @Emit('input')
+  onValueChanged (newValue: string) {
     this.html = quizDataToContent(
       this.data,
       null,
       ankiMustache(newValue, this.data)
-    );
-    return newValue;
+    )
+    return newValue
   }
 }
 </script>

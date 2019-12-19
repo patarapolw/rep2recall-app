@@ -20,32 +20,32 @@
 </template>
 
 <script lang="ts">
-import { Vue, Component } from "vue-property-decorator";
-import { shell , ipcRenderer } from "electron";
+import { Vue, Component } from 'vue-property-decorator'
+import { shell, ipcRenderer } from 'electron'
 
 @Component
 export default class App extends Vue {
-  updateMsg = "";
+  updateMsg = '';
   updateDownloaded = false;
 
-  mounted() {
+  mounted () {
     ipcRenderer.on('update_available', () => {
-      ipcRenderer.removeAllListeners('update_available');
-      this.updateMsg = 'A new update is available. Downloading now...';
-    });
+      ipcRenderer.removeAllListeners('update_available')
+      this.updateMsg = 'A new update is available. Downloading now...'
+    })
     ipcRenderer.on('update_downloaded', () => {
-      ipcRenderer.removeAllListeners('update_downloaded');
-      this.updateMsg = 'Update Downloaded. It will be installed on restart. Restart now?';
-      this.updateDownloaded = true;
-    });
+      ipcRenderer.removeAllListeners('update_downloaded')
+      this.updateMsg = 'Update Downloaded. It will be installed on restart. Restart now?'
+      this.updateDownloaded = true
+    })
   }
 
-  openInExternal(url: string) {
-    shell.openExternal(url);
+  openInExternal (url: string) {
+    shell.openExternal(url)
   }
 
-  restartApp() {
-    ipcRenderer.send('restart_app');
+  restartApp () {
+    ipcRenderer.send('restart_app')
   }
 }
 </script>
@@ -90,21 +90,6 @@ div[role=tooltip] {
     &:hover {
       color: blue;
     }
-  }
-}
-
-iframe {
-  margin: 0;
-  padding: 1em;
-  width: 100%;
-  height: 100%;
-  position: absolute;
-  top: 0;
-  left: 0;
-
-  &.html-view {
-    min-width: 400px;
-    min-height: 500px;
   }
 }
 

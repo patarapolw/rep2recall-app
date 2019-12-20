@@ -5,8 +5,9 @@ import editorApiDefinition from '@/api-definitions/editor'
 import ioApiDefinition from '@/api-definitions/io'
 import mediaApiDefinition from '@/api-definitions/media'
 import quizApiDefinition from '@/api-definitions/quiz'
+import DEFAULTS from '../defaults.json'
 
-export const BASE_URL = `http://localhost:${remote.process.env.PORT || '48000'}`
+export const BASE_URL = `http://localhost:${remote.process.env.PORT || DEFAULTS.port}`
 
 export const editorApi = createConsumer(editorApiDefinition, axios.create({
   baseURL: `${BASE_URL}/api/editor`

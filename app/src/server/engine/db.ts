@@ -296,11 +296,11 @@ export default class Db {
 
   async render(id: string) {
     const r = (await this.parseCond({
-      _id: id
+      card___id: id
     }, {
       limit: 1,
       fields: {
-        card: ['front', 'back', 'mnemonic'],
+        card: ['front', 'back', 'mnemonic', '_id'],
         template: ['front', 'back', 'css', 'js'],
         note: ['data']
       }
@@ -386,7 +386,7 @@ export default class Db {
     while (ids.length > 0) {
       const chunk = ids.splice(0, 900)
       this.db.cols.card.delete({
-        ids: { $in: chunk }
+        _id: { $in: chunk }
       })
     }
   }

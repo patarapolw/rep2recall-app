@@ -403,7 +403,7 @@ export default class Editor extends Vue {
       white-space: nowrap;
 
       .editor-button {
-        width: 100px;
+        min-width: 100px;
         margin-right: 1em;
 
         .dropdown-toggle-split {

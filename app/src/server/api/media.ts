@@ -11,7 +11,7 @@ const router = buildRouter(mediaApiDefinition, (_) => _
     if (m) {
       res.send(m.data || '')
     } else {
-      res.send(fs.readFileSync(path.join(MEDIA_FOLDER, req.params[0])))
+      res.sendFile(path.join(MEDIA_FOLDER, req.params[0]))
     }
   })
   .path(async () => {

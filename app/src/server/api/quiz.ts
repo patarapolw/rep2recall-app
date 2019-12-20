@@ -157,13 +157,16 @@ const router = buildRouter(quizApiDefinition, (_) => _
     }
   })
   .render(async (req) => {
-    return DB.render(req.params.id)
+    const r = await DB.render(req.params.id)
+    return r
   })
-  .right(async (req) => {
+  .right(async (req, res) => {
     await DB.markRight(req.params.id)
+    res.sendStatus(201)
   })
-  .wrong(async (req) => {
+  .wrong(async (req, res) => {
     await DB.markWrong(req.params.id)
+    res.sendStatus(201)
   })
 )
 

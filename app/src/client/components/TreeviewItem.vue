@@ -1,5 +1,5 @@
 <template lang="pug">
-li(v-if="!isDeleted")
+li.treeview(v-if="!isDeleted")
   span.caret(@click="onCaretClicked")
     fontawesome(v-if="data.children && isOpen" :icon="['fas', 'chevron-down']")
     fontawesome(v-if="data.children && !isOpen" :icon="['fas', 'chevron-right']")
@@ -95,9 +95,7 @@ export default class TreeviewItem extends Vue {
     }
   }
 
-  readMq (
-    mq: MediaQueryListEvent | MediaQueryList = this.state.mediaQuery
-  ) {
+  readMq (mq: MediaQueryListEvent | MediaQueryList = this.state.mediaQuery) {
     if (mq.matches && this.state.isQuizShown) {
       this.state.isDeckHidden = true
     } else {
@@ -112,23 +110,41 @@ export default class TreeviewItem extends Vue {
 </script>
 
 <style lang="scss">
-.tree-score {
-  > span {
-    min-width: 1em;
-    display: inline-block;
-    padding-left: 1em;
+.treeview {
+  .caret {
+    width: 1em;
   }
 
-  .tree-new {
-    color: green;
+  ul {
+    list-style-type: none;
   }
 
-  .tree-leech {
-    color: red;
+  .tree-text {
+    cursor: pointer;
+
+    &:hover {
+      color: blue;
+    }
   }
 
-  .tree-due {
-    color: blue;
+  .tree-score {
+    > span {
+      min-width: 1em;
+      display: inline-block;
+      padding-left: 1em;
+    }
+
+    .tree-new {
+      color: green;
+    }
+
+    .tree-leech {
+      color: red;
+    }
+
+    .tree-due {
+      color: blue;
+    }
   }
 }
 </style>

@@ -6,7 +6,7 @@
   v-model="q" @keyup="onInputKeypress")
   .treeview
     img.small-spinner(v-if="isLoading" src="Spinner-1s-200px.svg")
-    ul
+    ul(style="list-style-type: none")
       treeview-item(v-for="c in data" :key="c.fullName"
       :data="c" :q="q" parent-is-open :on-review="onReview" :on-delete="onDelete")
   b-modal#quiz-modal(scrollable hide-header @show="onQuizShown" @hide="getTreeViewData")
@@ -144,7 +144,6 @@ export default class Quiz extends Vue {
     this.currentQuizIndex = -1
     this.quizIds = []
     this.quizShownAnswer = false
-    this.quizContent = ''
   }
 
   async onReview (deck: string, type?: 'all' | 'new' | 'due' | 'leech') {
@@ -273,3 +272,11 @@ export default class Quiz extends Vue {
   }
 }
 </script>
+
+<style lang="scss">
+#quiz-modal {
+  .modal-body, iframe {
+    min-height: 500px;
+  }
+}
+</style>

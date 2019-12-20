@@ -35,15 +35,17 @@ const router = buildRouter(editorApiDefinition, (_) => _
     const ids = await DB.insertMany(req.body.create)
     return { ids }
   })
-  .update(async (req) => {
+  .update(async (req, res) => {
     const { ids, update } = req.body
     await DB.updateMany(ids, update)
+    res.sendStatus(201)
   })
-  .delete(async (req) => {
+  .delete(async (req, res) => {
     const { ids } = req.body
     await DB.deleteMany(ids)
+    res.sendStatus(201)
   })
-  .addTags(async (req) => {
+  .addTags(async (req, res) => {
     const { ids, tags } = req.body
     for (const id of ids) {
       const c = (await DB.card.find({ _id: id }, ['tag'], 'LIMIT 1'))[0]
@@ -51,8 +53,9 @@ const router = buildRouter(editorApiDefinition, (_) => _
         await DB.card.update({ _id: id }, { tag: [...(c.tag || []), ...tags] })
       }
     }
+    res.sendStatus(201)
   })
-  .removeTags(async (req) => {
+  .removeTags(async (req, res) => {
     const { ids, tags } = req.body
     for (const id of ids) {
       const c = (await DB.card.find({ _id: id }, ['tag'], 'LIMIT 1'))[0]
@@ -60,6 +63,7 @@ const router = buildRouter(editorApiDefinition, (_) => _
         await DB.card.update({ _id: id }, { tag: (c.tag || []).filter((t) => !tags.includes(t)) })
       }
     }
+    res.sendStatus(201)
   })
 )
 

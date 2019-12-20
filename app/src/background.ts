@@ -9,10 +9,10 @@ import contextMenu from 'electron-context-menu'
 import './server'
 import DEFAULTS from './defaults.json'
 
-process.env.PORT = process.env.PORT || DEFAULTS.port
-
 const isDevelopment = process.env.NODE_ENV !== 'production'
 
+process.env.PORT = process.env.PORT || DEFAULTS.port
+app.commandLine.appendSwitch('disable-site-isolation-trials')
 contextMenu({
   showInspectElement: true
 })

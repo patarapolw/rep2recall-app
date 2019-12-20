@@ -40,8 +40,8 @@ export const Columns: IColumn[] = [
   { name: 'tag', width: 150, type: 'tag', label: 'Tags' },
   { name: 'srsLevel', width: 150, type: 'number', label: 'SRS Level' },
   { name: 'nextReview', width: 250, type: 'datetime', label: 'Next Review' },
-  { name: 'card.createdAt', width: 250, type: 'datetime', label: 'Created' },
-  { name: 'card.updatedAt', width: 250, type: 'datetime', label: 'Updated' }
+  { name: 'createdAt', width: 250, type: 'datetime', label: 'Created' },
+  { name: 'updatedAt', width: 250, type: 'datetime', label: 'Updated' }
 ]
 
 export const DateFormat = 'Y-M-d H:i'

@@ -68,6 +68,8 @@ export interface IEntry {
   nextReview?: string | Date;
   tag?: string[];
   stat?: Record<string, any>;
+  createdAt?: Date;
+  updatedAt?: Date;
   template?: {
     name: string;
     front?: string;

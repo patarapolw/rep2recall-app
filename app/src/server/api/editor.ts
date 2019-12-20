@@ -11,7 +11,7 @@ const router = buildRouter(editorApiDefinition, (_) => _
         offset,
         limit,
         fields: {
-          card: ['front', 'back', 'mnemonic', 'tag', 'srsLevel', 'nextReview', 'createdAt', 'updatedAt', 'stat', 'deck'],
+          card: ['front', 'back', 'mnemonic', 'tag', 'srsLevel', 'nextReview', 'createdAt', 'updatedAt', 'stat', 'deck', '_id'],
           template: ['name', 'front', 'back'],
           note: ['meta', 'data'],
           source: ['name']

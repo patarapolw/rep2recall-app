@@ -16,6 +16,7 @@ li(v-if="!isDeleted")
 <script lang="ts">
 import { Vue, Component, Prop, Watch } from 'vue-property-decorator'
 import quizState from '../states/quiz'
+import $ from 'jquery'
 
 interface ITreeViewStat {
   new: number;
@@ -109,3 +110,25 @@ export default class TreeviewItem extends Vue {
   }
 }
 </script>
+
+<style lang="scss">
+.tree-score {
+  > span {
+    min-width: 1em;
+    display: inline-block;
+    padding-left: 1em;
+  }
+
+  .tree-new {
+    color: green;
+  }
+
+  .tree-leech {
+    color: red;
+  }
+
+  .tree-due {
+    color: blue;
+  }
+}
+</style>

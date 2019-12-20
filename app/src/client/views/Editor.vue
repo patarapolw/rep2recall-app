@@ -36,10 +36,10 @@
         th
     tbody
       tr.fixed-header-offset
-      tr(v-for="d in data" :key="d.id" @click="onTableRowClicked(d.id)" :class="{selected: checkedIds.has(d.id)}")
+      tr(v-for="d in data" :key="d._id" @click="onTableRowClicked(d._id)" :class="{selected: checkedIds.has(d._id)}")
         td(:style="{width: '50px'}")
           div
-            input(type="checkbox" @click.native="onCheckboxClicked($event, d.id)" :checked="checkedIds.has(d.id)")
+            input(type="checkbox" @click="onCheckboxClicked($event, d._id)" :checked="checkedIds.has(d._id)")
         td(v-for="a in getOrderedDict(d)" :key="a[0]")
           .wrapper
             my-iframe.wrapped(v-if="a[2].type === 'html'" :html="getHtml(d, a[0])")
@@ -179,7 +179,7 @@ export default class Editor extends Vue {
 
   async onEntrySaved (update: any) {
     this.reset()
-    this.sortBy = this.checkedIds.size > 0 ? 'modified' : 'created'
+    this.sortBy = this.checkedIds.size > 0 ? 'card.updatedAt' : 'card.createdAt'
     this.desc = true
     this.fetchData()
   }
@@ -260,7 +260,7 @@ export default class Editor extends Vue {
       checkboxMain.indeterminate = false
       if (checkboxMain.checked) {
         this.data.forEach(d => {
-          this.checkedIds.add(d.id)
+          this.checkedIds.add(d._id)
         })
 
         if (this.count > this.limit) {
@@ -298,7 +298,7 @@ export default class Editor extends Vue {
   }
 
   onTableRowClicked (id: string) {
-    const availableIds = new Set(this.data.map(row => row.id))
+    const availableIds = new Set(this.data.map(row => row._id))
 
     this.checkedIds.forEach(c => {
       if (!availableIds.has(c)) {

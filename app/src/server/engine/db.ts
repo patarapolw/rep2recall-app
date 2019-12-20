@@ -55,7 +55,7 @@ export class DbCard {
   @prop({ type: 'integer', null: true }) srsLevel?: number;
   @prop({ null: true }) nextReview?: Date;
   @prop({ type: 'StrArray', null: true }) tag?: string[];
-  @prop({ default: '{}' }) stat?: Record<string, any>;
+  @prop({ default: {} }) stat?: Record<string, any>;
 }
 
 export interface IEntry {
@@ -209,7 +209,7 @@ export default class Db {
       }
     }
 
-    const now = (new Date()).toISOString()
+    const now = new Date()
     const cardIds: string[] = []
 
     for (const e of entries) {
@@ -277,9 +277,9 @@ export default class Db {
     }
 
     const data = await this.card.chain(dotProp.get(options, 'fields.card'))
-      .join(this.template, 'templateId', '_id', dotProp.get(options, 'fields.template'))
-      .join(this.note, 'noteId', '_id', dotProp.get(options, 'fields.note'))
-      .join(this.source, 'note.sourceId', '_id', dotProp.get(options, 'fields.source'))
+      .join(this.template, 'templateId', '_id', dotProp.get(options, 'fields.template'), "left")
+      .join(this.note, 'noteId', '_id', dotProp.get(options, 'fields.note'), "left")
+      .join(this.source, 'note.sourceId', '_id', dotProp.get(options, 'fields.source'), "left")
       .data(joinCond, postfix)
 
     return data.map((d) => {

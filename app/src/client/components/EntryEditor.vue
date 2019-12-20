@@ -47,13 +47,11 @@ b-modal(:id="id" :title="title" size="lg" @show="onModalShown" @ok="onModalOk")
     .col-12.mb-3(v-if="entryId")
       .row
         label.col-form-label.col-sm-2 Source
-        input.form-control.col-sm-10(:value="update.source || data.source" readonly
-        @input="$set(update, 'source', $event.target.value)")
+        input.form-control.col-sm-10(:value="dotProp.get(data, 'source.name')" readonly)
     .col-12.mb-3(v-if="entryId")
       .row
         label.col-form-label.col-sm-2 Template
-        input.form-control.col-sm-10(:value="update.template || data.template" readonly
-        @input="$set(update, 'template', $event.target.value)")
+        input.form-control.col-sm-10(:value="dotProp.get(data, 'template.name')" readonly)
     .col-12.mb-3
       .row
         .col-6
@@ -114,7 +112,7 @@ export default class EntryEditor extends Vue {
       })
   }
 
-  private getParsedData (key: string) {
+  getParsedData (key: string) {
     let v: string = this.data[key] || ''
 
     if (v.startsWith('@rendered\n')) {
@@ -126,7 +124,7 @@ export default class EntryEditor extends Vue {
     return v
   }
 
-  private onExtraRowInput (evt: any) {
+  onExtraRowInput (evt: any) {
     const k = evt.target.value
 
     if (evt.key === 'Enter') {
@@ -155,7 +153,7 @@ export default class EntryEditor extends Vue {
     }
   }
 
-  private async onModalShown () {
+  async onModalShown () {
     this.data = {}
     this.update = {}
     this.$nextTick(() => {
@@ -166,8 +164,9 @@ export default class EntryEditor extends Vue {
       this.isLoading = true
 
       const { data } = await editorApi.get({
-        body: { q: { id: this.entryId } }
+        body: { q: { 'card___id': this.entryId } }
       })
+
       Vue.set(this, 'data', fixData(data.data[0]))
     }
 
@@ -175,7 +174,7 @@ export default class EntryEditor extends Vue {
   }
 
   @Emit('ok')
-  private async onModalOk (evt: any) {
+  async onModalOk (evt: any) {
     for (const c of Columns) {
       if (c.required) {
         if (this.update[c.name] === undefined && !this.data[c.name]) {
@@ -191,14 +190,14 @@ export default class EntryEditor extends Vue {
         const r = await editorApi.update({
           body: { ids: [this.entryId], update: this.update }
         })
-        if (r.status === 201) {
+        if (r.status === 200) {
           this.$bvModal.msgBoxOk('Updated')
         }
       } else {
         const r = await editorApi.create({
-          body: { create: this.update }
+          body: { create: [this.update] }
         })
-        if (r.status === 201) {
+        if (r.status === 200) {
           this.$bvModal.msgBoxOk('Created')
         }
       }

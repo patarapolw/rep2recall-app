@@ -7,7 +7,6 @@ import cors from 'cors'
 import bodyParser from 'body-parser'
 import SocketIO from 'socket.io'
 import http from 'http'
-import fs from 'fs'
 import path from 'path'
 
 const app = express()
@@ -24,11 +23,11 @@ app.use('/media', mediaRouter)
 app.use('/api/quiz', quizRouter)
 
 app.get('/reveal', (req, res) => {
-  res.send(fs.readFileSync(
+  res.sendFile(
     process.env.NODE_ENV !== 'production'
-      ? fs.readFileSync(path.normalize('../public/iframe.html'), 'utf8')
-      : fs.readFileSync(path.join(__dirname, 'iframe.html'), 'utf8')
-  ))
+      ? path.join(__dirname, '../public/iframe.html')
+      : path.join(__dirname, 'iframe.html')
+  )
 });
 
 (async () => {

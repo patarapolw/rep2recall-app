@@ -40,7 +40,7 @@ export default class Settings extends Vue {
       const rDelete = await fetch(`${BASE_URL}/api/reset`, {
         method: 'DELETE'
       })
-      if (rDelete.status === 201) {
+      if (rDelete.status === 200) {
         this.$bvModal.msgBoxOk('Database is reset')
       }
     }

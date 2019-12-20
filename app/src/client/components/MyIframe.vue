@@ -14,6 +14,13 @@ export default class MyIframe extends Vue {
     return `${BASE_URL}/reveal`
   }
 
+  mounted () {
+    const iframe = this.$el as HTMLIFrameElement
+    iframe.onload = () => {
+      this.updateHtml()
+    }
+  }
+
   @Watch('html')
   updateHtml () {
     const iframe = this.$el as HTMLIFrameElement
@@ -33,7 +40,5 @@ iframe {
   position: absolute;
   top: 0;
   left: 0;
-  min-width: 400px;
-  min-height: 500px;
 }
 </style>

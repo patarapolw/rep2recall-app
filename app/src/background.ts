@@ -29,7 +29,8 @@ function createWindow () {
   win = new BrowserWindow({ width: 1024,
     height: 768,
     webPreferences: {
-      nodeIntegration: true
+      nodeIntegration: true,
+      webSecurity: false
     } })
   win.maximize()
 

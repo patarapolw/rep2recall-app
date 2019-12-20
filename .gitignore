@@ -2,7 +2,7 @@ dist/
 user/
 
 *.lock
-.vscode/
+# .vscode/
 logs
 *.log
 npm-debug.log*
